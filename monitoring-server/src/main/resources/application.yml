@@ -6,10 +6,14 @@ spring:
     name: monitoring-server
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/monitoring}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/monitoring}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
 
   jpa:
     hibernate:
