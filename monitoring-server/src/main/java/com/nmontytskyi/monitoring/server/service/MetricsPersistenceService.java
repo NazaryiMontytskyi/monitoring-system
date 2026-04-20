@@ -30,6 +30,11 @@ public class MetricsPersistenceService {
 
     @Transactional
     public MetricRecordResponse saveEndpointSnapshot(MetricSnapshotRequest request) {
+        return saveEndpointSnapshot(request, MetricSource.PUSH);
+    }
+
+    @Transactional
+    public MetricRecordResponse saveEndpointSnapshot(MetricSnapshotRequest request, MetricSource source) {
         RegisteredServiceEntity service = serviceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new ServiceNotFoundException(request.getServiceId()));
 
@@ -42,7 +47,7 @@ public class MetricsPersistenceService {
                 .heapUsedMb(request.getHeapUsedMb())
                 .heapMaxMb(request.getHeapMaxMb())
                 .errorMessage(request.getErrorMessage())
-                .source(MetricSource.PUSH)
+                .source(source)
                 .recordedAt(LocalDateTime.now())
                 .build();
 
