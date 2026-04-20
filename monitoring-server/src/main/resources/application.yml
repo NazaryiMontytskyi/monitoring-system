@@ -41,6 +41,13 @@ spring:
           starttls:
             enable: true
 
+monitoring:
+  polling:
+    enabled: true
+    interval-seconds: 30
+    timeout-seconds: 5
+    connect-timeout-seconds: 3
+
 management:
   endpoints:
     web:
