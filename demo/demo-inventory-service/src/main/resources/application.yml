@@ -1,0 +1,13 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: inventory-service
+
+monitoring:
+  server-url: http://localhost:8080
+  service-name: inventory-service
+  service-host: localhost
+  service-port: 8081
+  actuator-url: http://localhost:8081/actuator
