@@ -47,6 +47,11 @@ monitoring:
     interval-seconds: 30
     timeout-seconds: 5
     connect-timeout-seconds: 3
+  alert:
+    enabled: true
+    evaluation-window-minutes: 60
+    notification-from: ${ALERT_FROM_EMAIL:monitoring@example.com}
+    notification-to: ${ALERT_TO_EMAIL:admin@example.com}
 
 management:
   endpoints:

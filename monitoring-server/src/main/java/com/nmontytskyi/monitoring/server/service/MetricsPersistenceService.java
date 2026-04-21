@@ -1,6 +1,7 @@
 package com.nmontytskyi.monitoring.server.service;
 
 import com.nmontytskyi.monitoring.detector.AnomalyDetector;
+import com.nmontytskyi.monitoring.server.alert.AlertEvaluationService;
 import com.nmontytskyi.monitoring.server.dto.request.MetricSnapshotRequest;
 import com.nmontytskyi.monitoring.server.dto.response.AggregateMetricsResponse;
 import com.nmontytskyi.monitoring.server.dto.response.MetricRecordResponse;
@@ -27,6 +28,7 @@ public class MetricsPersistenceService {
     private final MetricRecordRepository metricRecordRepository;
     private final RegisteredServiceRepository serviceRepository;
     private final AnomalyDetector anomalyDetector;
+    private final AlertEvaluationService alertEvaluationService;
 
     @Transactional
     public MetricRecordResponse saveEndpointSnapshot(MetricSnapshotRequest request) {
@@ -70,6 +72,8 @@ public class MetricsPersistenceService {
             log.debug("Anomaly detection for service {}: zScore={}, anomaly={}",
                     request.getServiceId(), result.getZScore(), result.isAnomaly());
         }
+
+        alertEvaluationService.evaluate(request.getServiceId(), saved);
 
         return toResponse(saved);
     }

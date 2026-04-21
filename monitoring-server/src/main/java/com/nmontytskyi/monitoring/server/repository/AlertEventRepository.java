@@ -4,6 +4,8 @@ import com.nmontytskyi.monitoring.server.entity.AlertEventEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -52,4 +54,9 @@ public interface AlertEventRepository extends JpaRepository<AlertEventEntity, Lo
      * @return the most recent event for this rule, if any
      */
     Optional<AlertEventEntity> findTopByRuleIdOrderByFiredAtDesc(Long ruleId);
+
+    @Query("SELECT COUNT(e) > 0 FROM AlertEventEntity e " +
+           "WHERE e.rule.id = :ruleId AND e.firedAt >= :since")
+    boolean existsByRuleIdAndFiredAtAfter(@Param("ruleId") Long ruleId,
+                                          @Param("since") LocalDateTime since);
 }
