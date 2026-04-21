@@ -2,6 +2,7 @@ package com.nmontytskyi.monitoring.server.service;
 
 import com.nmontytskyi.monitoring.detector.AnomalyDetector;
 import com.nmontytskyi.monitoring.model.HealthStatus;
+import com.nmontytskyi.monitoring.server.alert.AlertEvaluationService;
 import com.nmontytskyi.monitoring.server.dto.request.MetricSnapshotRequest;
 import com.nmontytskyi.monitoring.server.dto.response.AggregateMetricsResponse;
 import com.nmontytskyi.monitoring.server.dto.response.MetricRecordResponse;
@@ -41,6 +42,9 @@ class MetricsPersistenceServiceTest {
 
     @Mock
     private AnomalyDetector anomalyDetector;
+
+    @Mock
+    private AlertEvaluationService alertEvaluationService;
 
     @InjectMocks
     private MetricsPersistenceService service;

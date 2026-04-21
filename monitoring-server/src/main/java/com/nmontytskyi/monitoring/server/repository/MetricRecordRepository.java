@@ -1,5 +1,6 @@
 package com.nmontytskyi.monitoring.server.repository;
 
+import com.nmontytskyi.monitoring.model.HealthStatus;
 import com.nmontytskyi.monitoring.server.entity.MetricRecordEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -117,4 +118,21 @@ public interface MetricRecordRepository extends JpaRepository<MetricRecordEntity
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
     );
+
+    @Query("SELECT AVG(m.responseTimeMs) FROM MetricRecordEntity m " +
+           "WHERE m.service.id = :serviceId AND m.recordedAt >= :since")
+    Double avgResponseTimeSince(@Param("serviceId") Long serviceId,
+                                @Param("since") LocalDateTime since);
+
+    @Query("SELECT COUNT(m) FROM MetricRecordEntity m " +
+           "WHERE m.service.id = :serviceId AND m.recordedAt >= :since " +
+           "AND m.status = :status")
+    long countByServiceIdAndStatusSince(@Param("serviceId") Long serviceId,
+                                        @Param("since") LocalDateTime since,
+                                        @Param("status") HealthStatus status);
+
+    @Query("SELECT COUNT(m) FROM MetricRecordEntity m " +
+           "WHERE m.service.id = :serviceId AND m.recordedAt >= :since")
+    long countByServiceIdSince(@Param("serviceId") Long serviceId,
+                               @Param("since") LocalDateTime since);
 }
