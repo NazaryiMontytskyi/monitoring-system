@@ -135,4 +135,56 @@ public interface MetricRecordRepository extends JpaRepository<MetricRecordEntity
            "WHERE m.service.id = :serviceId AND m.recordedAt >= :since")
     long countByServiceIdSince(@Param("serviceId") Long serviceId,
                                @Param("since") LocalDateTime since);
+
+    /**
+     * Calculates the P50, P95, and P99 response-time percentiles for a service
+     * over a sliding time window using PostgreSQL's {@code percentile_cont} function.
+     *
+     * <p>Uses a native query because JPQL does not support ordered-set aggregate
+     * functions ({@code percentile_cont … WITHIN GROUP (ORDER BY …)}).
+     *
+     * <p>When no records match the filter (empty window), PostgreSQL returns
+     * a single row with {@code NULL} values for all three percentile columns.
+     *
+     * @param serviceId the service identifier
+     * @param since     start of the time window (inclusive)
+     * @return single-element list containing an {@code Object[]} row
+     *         {@code [p50, p95, p99]}; the values are {@code null} when no
+     *         records exist in the window.
+     *         Returns {@code List.of(new Object[]{null,null,null})} on empty input
+     *         (PostgreSQL ordered-set aggregates always return one row).
+     */
+    @Query(value = """
+            SELECT
+                percentile_cont(0.50) WITHIN GROUP (ORDER BY response_time_ms) AS p50,
+                percentile_cont(0.95) WITHIN GROUP (ORDER BY response_time_ms) AS p95,
+                percentile_cont(0.99) WITHIN GROUP (ORDER BY response_time_ms) AS p99
+            FROM metric_records
+            WHERE service_id = :serviceId
+              AND recorded_at >= :since
+            """, nativeQuery = true)
+    List<Object[]> findPercentiles(
+            @Param("serviceId") Long serviceId,
+            @Param("since") LocalDateTime since);
+
+    /**
+     * Counts the number of metric records for a service in the given time window
+     * where {@code error_flag} is {@code TRUE}.
+     *
+     * <p>Uses the denormalized {@code error_flag} column to avoid expensive
+     * {@code IS NOT NULL} predicates on {@code error_message}.
+     *
+     * @param serviceId the service identifier
+     * @param since     start of the time window (inclusive)
+     * @return count of error records in the window
+     */
+    @Query(value = """
+            SELECT COUNT(*) FROM metric_records
+            WHERE service_id = :serviceId
+              AND recorded_at >= :since
+              AND error_flag = true
+            """, nativeQuery = true)
+    long countErrors(
+            @Param("serviceId") Long serviceId,
+            @Param("since") LocalDateTime since);
 }

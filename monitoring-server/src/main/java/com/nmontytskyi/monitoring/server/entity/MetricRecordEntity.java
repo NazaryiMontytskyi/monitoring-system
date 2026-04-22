@@ -98,6 +98,22 @@ public class MetricRecordEntity {
     private String errorMessage;
 
     /**
+     * Denormalized flag set to {@code true} when the record represents an error.
+     *
+     * <p>Populated at write time by {@code MetricsPersistenceService} when:
+     * <ul>
+     *   <li>the {@code status} is {@code DOWN} or {@code DEGRADED}, or</li>
+     *   <li>{@code errorMessage} is non-null.</li>
+     * </ul>
+     *
+     * <p>Avoids expensive {@code IS NOT NULL} / {@code LIKE} predicates on
+     * {@code error_message} in the SLA engine's COUNT queries.
+     */
+    @Column(name = "error_flag", nullable = false)
+    @Builder.Default
+    private boolean errorFlag = false;
+
+    /**
      * {@code true} if the Z-score of {@code responseTimeMs} exceeds the
      * configured anomaly threshold (default: 3σ).
      */
