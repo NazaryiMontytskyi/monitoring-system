@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('SLA Report — ' + ${service.name}, ~{::main})}">
+<head></head>
+<body>
+<main class="p-6 flex flex-col gap-6">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+        <a th:href="@{/services/{id}(id=${service.id})}"
+           class="text-sm transition-colors hover:brightness-110" style="color:#94a3b8;">← Service Details</a>
+        <span style="color:#475569;">/</span>
+        <h1 class="text-2xl font-semibold" style="color:#f1f5f9;">
+            SLA Report — <span th:text="${service.name}">service</span>
+        </h1>
+    </div>
+
+    <!-- Window selector -->
+    <div class="flex gap-2">
+        <th:block th:each="w : ${windows}">
+            <a th:href="@{/services/{id}/sla(id=${service.id},window=${w.name()})}"
+               class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+               th:style="${w.name() == window.name()} ?
+                   'background-color:#3b82f6;color:#fff;' :
+                   'background-color:#1e293b;color:#94a3b8;'"
+               th:text="${w.name()}">WINDOW</a>
+        </th:block>
+    </div>
+
+    <!-- Compliance table -->
+    <div class="rounded-xl shadow-lg overflow-hidden" style="background-color:#1e293b;">
+        <div class="px-6 py-4 border-b" style="border-color:#334155;">
+            <h2 class="text-base font-semibold" style="color:#f1f5f9;">Compliance Details</h2>
+        </div>
+        <table class="w-full text-sm">
+            <thead>
+                <tr style="background-color:#0f172a;">
+                    <th class="px-6 py-3 text-left font-medium" style="color:#94a3b8;">Metric</th>
+                    <th class="px-6 py-3 text-left font-medium" style="color:#94a3b8;">Actual</th>
+                    <th class="px-6 py-3 text-left font-medium" style="color:#94a3b8;">SLA Threshold</th>
+                    <th class="px-6 py-3 text-left font-medium" style="color:#94a3b8;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Uptime row -->
+                <tr th:style="${!slaReport.uptimeMet} ? 'background-color:rgba(239,68,68,0.07);' : ''">
+                    <td class="px-6 py-4 font-medium" style="color:#f1f5f9;">Uptime</td>
+                    <td class="px-6 py-4" style="color:#f1f5f9;"
+                        th:text="${#numbers.formatDecimal(slaReport.actualUptimePercent,1,2)} + '%'">—</td>
+                    <td class="px-6 py-4" style="color:#94a3b8;">
+                        ≥ <span th:text="${#numbers.formatDecimal(slaReport.sla.uptimePercent,1,1)}">99.9</span>%
+                    </td>
+                    <td class="px-6 py-4" th:text="${slaReport.uptimeMet} ? '✅' : '❌'">—</td>
+                </tr>
+                <!-- Avg RT row -->
+                <tr th:style="${!slaReport.responseTimeMet} ? 'background-color:rgba(239,68,68,0.07);' : ''">
+                    <td class="px-6 py-4 font-medium" style="color:#f1f5f9;">Avg Response Time</td>
+                    <td class="px-6 py-4" style="color:#f1f5f9;"
+                        th:text="${#numbers.formatDecimal(slaReport.actualAvgResponseTimeMs,1,0)} + ' ms'">—</td>
+                    <td class="px-6 py-4" style="color:#94a3b8;">
+                        ≤ <span th:text="${slaReport.sla.maxResponseTimeMs}">1000</span> ms
+                    </td>
+                    <td class="px-6 py-4" th:text="${slaReport.responseTimeMet} ? '✅' : '❌'">—</td>
+                </tr>
+                <!-- Error rate row -->
+                <tr th:style="${!slaReport.errorRateMet} ? 'background-color:rgba(239,68,68,0.07);' : ''">
+                    <td class="px-6 py-4 font-medium" style="color:#f1f5f9;">Error Rate</td>
+                    <td class="px-6 py-4" style="color:#f1f5f9;"
+                        th:text="${#numbers.formatDecimal(slaReport.actualErrorRatePercent,1,2)} + '%'">—</td>
+                    <td class="px-6 py-4" style="color:#94a3b8;">
+                        ≤ <span th:text="${#numbers.formatDecimal(slaReport.sla.maxErrorRatePercent,1,1)}">5.0</span>%
+                    </td>
+                    <td class="px-6 py-4" th:text="${slaReport.errorRateMet} ? '✅' : '❌'">—</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Percentile cards -->
+    <div class="grid grid-cols-3 gap-4">
+        <div class="rounded-xl p-5 shadow-lg" style="background-color:#1e293b;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">P50</p>
+            <p class="text-3xl font-bold mt-1" style="color:#22c55e;">
+                <span th:text="${slaReport.p50ResponseTimeMs}">0</span>
+                <span class="text-base font-normal" style="color:#94a3b8;"> ms</span>
+            </p>
+            <p class="text-xs mt-1" style="color:#475569;">50% of requests faster than this</p>
+        </div>
+        <div class="rounded-xl p-5 shadow-lg" style="background-color:#1e293b;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">P95</p>
+            <p class="text-3xl font-bold mt-1" style="color:#f59e0b;">
+                <span th:text="${slaReport.p95ResponseTimeMs}">0</span>
+                <span class="text-base font-normal" style="color:#94a3b8;"> ms</span>
+            </p>
+            <p class="text-xs mt-1" style="color:#475569;">95% of requests faster than this</p>
+        </div>
+        <div class="rounded-xl p-5 shadow-lg" style="background-color:#1e293b;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">P99</p>
+            <p class="text-3xl font-bold mt-1" style="color:#ef4444;">
+                <span th:text="${slaReport.p99ResponseTimeMs}">0</span>
+                <span class="text-base font-normal" style="color:#94a3b8;"> ms</span>
+            </p>
+            <p class="text-xs mt-1" style="color:#475569;">99% of requests faster than this</p>
+        </div>
+    </div>
+
+    <!-- Overall status block -->
+    <div class="rounded-xl shadow-lg p-8 text-center"
+         th:style="${slaReport.slaBreached} ?
+             'background-color:#1e293b;border:1px solid rgba(239,68,68,0.3);' :
+             'background-color:#1e293b;border:1px solid rgba(34,197,94,0.3);'">
+        <p class="text-4xl font-bold"
+           th:style="${slaReport.slaBreached} ? 'color:#ef4444;' : 'color:#22c55e;'"
+           th:text="${slaReport.slaBreached} ? '❌ SLA BREACHED' : '✅ SLA MET'">STATUS</p>
+        <p class="text-lg font-semibold mt-2" style="color:#94a3b8;">
+            Compliance: <span th:text="${#numbers.formatDecimal(slaReport.compliancePercent,1,1)} + '%'">100%</span>
+        </p>
+        <p class="text-sm mt-1" style="color:#64748b;"
+           th:text="${slaReport.slaBreached} ?
+               'Service is violating one or more SLA requirements.' :
+               'Service is operating within acceptable parameters.'">description</p>
+    </div>
+
+    <div class="flex justify-center">
+        <a th:href="@{/services/{id}(id=${service.id})}"
+           class="px-6 py-2 rounded-lg text-sm font-medium transition-colors"
+           style="background-color:#3b82f6;color:#fff;">← View Service Details</a>
+    </div>
+
+</main>
+</body>
+</html>
