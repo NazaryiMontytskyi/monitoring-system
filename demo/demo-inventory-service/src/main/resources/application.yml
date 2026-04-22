@@ -5,9 +5,6 @@ spring:
   application:
     name: inventory-service
 
-monitoring:
-  server-url: http://localhost:8080
-  service-name: inventory-service
-  service-host: localhost
-  service-port: 8081
-  actuator-url: http://localhost:8081/actuator
+# Override the monitoring server URL if different from annotation default (localhost:8080)
+# monitoring:
+#   server-url: http://monitoring-server:8080

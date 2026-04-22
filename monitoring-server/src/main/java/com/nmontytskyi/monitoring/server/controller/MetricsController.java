@@ -17,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Validated
 @RestController
@@ -34,6 +35,15 @@ public class MetricsController {
     @ApiResponse(responseCode = "404", description = "Service not found")
     public ResponseEntity<MetricRecordResponse> pushSnapshot(@Valid @RequestBody MetricSnapshotRequest request) {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(service.saveEndpointSnapshot(request));
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "Push a batch of metric snapshots (used by the starter's MetricsBuffer)")
+    @ApiResponse(responseCode = "202", description = "All snapshots accepted and persisted")
+    @ApiResponse(responseCode = "400", description = "Invalid request body")
+    public ResponseEntity<List<MetricRecordResponse>> pushBatch(
+            @Valid @RequestBody List<@Valid MetricSnapshotRequest> batch) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(service.saveBatch(batch));
     }
 
     @GetMapping("/{serviceId}/latest")
