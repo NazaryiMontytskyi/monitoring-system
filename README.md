@@ -487,7 +487,9 @@ mvn spring-boot:run -pl monitoring-server
 Dashboard: `http://localhost:8080`
 Swagger UI: `http://localhost:8080/swagger-ui.html`
 
-### Add to your microservice
+### Quick Start — add monitoring to your microservice
+
+**Step 1** — add the starter dependency:
 ```xml
 <dependency>
     <groupId>com.nmontytskyi</groupId>
@@ -496,20 +498,46 @@ Swagger UI: `http://localhost:8080/swagger-ui.html`
 </dependency>
 ```
 
+**Step 2** — annotate the main class (no `application.yml` required):
 ```java
-@MonitoredMicroservice(
-    name = "your-service-name",
-    serverUrl = "http://localhost:8080",
-    sla = @Sla(uptimePercent = 99.9, maxResponseTimeMs = 500)
-)
 @SpringBootApplication
-public class YourApplication { ... }
+@MonitoredMicroservice(
+    name = "order-service",
+    serverUrl = "http://monitoring-server:8080",
+    sla = @Sla(uptimePercent = 99.9, maxResponseTimeMs = 500),
+    trackAllEndpoints = true   // intercept all @RestController methods automatically
+)
+public class OrderServiceApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(OrderServiceApplication.class, args);
+    }
+}
 ```
 
+That is all. The service auto-registers, all REST endpoints are monitored, metrics are
+batched and flushed every 5 seconds, and alerts fire automatically when SLA is breached.
+
+**Optional** — override any annotation value via `application.yml`:
 ```yaml
-# application.yml — optional overrides
+# Only the properties you want to change
 monitoring:
-  enabled: true
-  service-name: your-service-name
-  server-url: http://localhost:8080
+  server-url: http://monitoring-server:8080   # overrides annotation serverUrl
+  buffer-flush-interval-ms: 2000             # flush more frequently
+```
+
+**Selective monitoring** — use `@MonitoredEndpoint` on specific methods when
+`trackAllEndpoints = false` (the default):
+```java
+@RestController
+public class OrderController {
+    @MonitoredEndpoint
+    @PostMapping("/orders")
+    public Order createOrder(@RequestBody OrderRequest req) { ... }
+}
+```
+
+**Business metrics** — track any method with `@TrackMetric`:
+```java
+@TrackMetric(name = "orders.processed", kind = MetricKind.COUNTER)
+public void processOrder(Order order) { ... }
 ```

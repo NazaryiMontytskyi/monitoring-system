@@ -78,6 +78,17 @@ public class MetricsPersistenceService {
         return toResponse(saved);
     }
 
+    /**
+     * Saves a batch of metric snapshots in a single transaction.
+     * Alert evaluation runs for each record individually.
+     */
+    @Transactional
+    public List<MetricRecordResponse> saveBatch(List<MetricSnapshotRequest> requests) {
+        return requests.stream()
+                .map(req -> saveEndpointSnapshot(req, MetricSource.PUSH))
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public Optional<MetricRecordResponse> getLatest(Long serviceId) {
         if (!serviceRepository.existsById(serviceId)) {

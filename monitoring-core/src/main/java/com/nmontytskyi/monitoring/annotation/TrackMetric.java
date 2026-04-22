@@ -1,5 +1,7 @@
 package com.nmontytskyi.monitoring.annotation;
 
+import com.nmontytskyi.monitoring.model.MetricKind;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -18,11 +20,11 @@ import java.lang.annotation.Target;
  * @Service
  * public class InventoryService {
  *
- *     @TrackMetric(name = "db.inventory.query", unit = "ms")
+ *     @TrackMetric(name = "db.inventory.query", kind = MetricKind.TIMER)
  *     public List<Product> findAvailable() { ... }
  *
- *     @TrackMetric(name = "external.payment.call", unit = "ms", description = "Payment gateway call duration")
- *     public PaymentResult charge(PaymentRequest request) { ... }
+ *     @TrackMetric(name = "orders.created", kind = MetricKind.COUNTER, description = "Orders placed")
+ *     public Order createOrder(OrderRequest request) { ... }
  * }
  * }</pre>
  */
@@ -33,9 +35,15 @@ public @interface TrackMetric {
 
     /**
      * Unique metric name in {@code "category.subcategory.action"} format.
-     * Examples: {@code "db.query.time"}, {@code "cache.hit.rate"}.
+     * Examples: {@code "db.query.time"}, {@code "orders.created"}.
      */
     String name();
+
+    /**
+     * How the metric value should be interpreted.
+     * Defaults to {@link MetricKind#COUNTER}.
+     */
+    MetricKind kind() default MetricKind.COUNTER;
 
     /**
      * Unit of measurement. Defaults to milliseconds.

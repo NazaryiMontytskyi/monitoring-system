@@ -12,7 +12,14 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
+import java.util.List;
 
+/**
+ * HTTP client for communicating with the central monitoring server.
+ *
+ * <p>All calls are wrapped in try/catch so that monitoring failures
+ * never propagate to the client service's business logic.
+ */
 @Slf4j
 public class MonitoringServerClient {
 
@@ -38,6 +45,7 @@ public class MonitoringServerClient {
                 .build();
     }
 
+    /** Registers this service and returns the assigned service ID, or {@code null} on failure. */
     public Long registerService(ServiceRegistrationRequest request) {
         try {
             ServiceRegistrationResponse response = restClient.post()
@@ -53,6 +61,7 @@ public class MonitoringServerClient {
         }
     }
 
+    /** Pushes a single metric snapshot (used by {@code @MonitoredEndpoint} path). */
     public void pushMetric(MetricPushRequest request) {
         try {
             restClient.post()
@@ -64,5 +73,19 @@ public class MonitoringServerClient {
         } catch (Exception e) {
             log.warn("Failed to push metric to monitoring-server: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Pushes a batch of metric snapshots in a single HTTP call.
+     * Throws on HTTP error so the caller ({@link com.nmontytskyi.monitoring.starter.buffer.MetricsBuffer})
+     * can apply its re-queue fail-safe strategy.
+     */
+    public void pushMetricBatch(List<MetricPushRequest> batch) {
+        restClient.post()
+                .uri("/api/metrics/batch")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(batch)
+                .retrieve()
+                .toBodilessEntity();
     }
 }

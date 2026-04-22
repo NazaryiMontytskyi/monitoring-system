@@ -1,6 +1,5 @@
 package com.nmontytskyi.demo.inventory;
 
-import com.nmontytskyi.monitoring.annotation.MonitoredEndpoint;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,14 +23,12 @@ public class InventoryController {
     ));
 
     @GetMapping
-    @MonitoredEndpoint
     public List<Item> getAll() {
         log.info("GET /api/inventory — returning {} items", store.size());
         return new ArrayList<>(store.values());
     }
 
     @GetMapping("/{id}")
-    @MonitoredEndpoint
     public ResponseEntity<Item> getById(@PathVariable Long id) {
         log.info("GET /api/inventory/{}", id);
         Item item = store.get(id);
@@ -42,7 +39,6 @@ public class InventoryController {
     }
 
     @PostMapping
-    @MonitoredEndpoint
     public ResponseEntity<Item> create(@RequestBody Item item) {
         long newId = idGenerator.incrementAndGet();
         Item saved = new Item(newId, item.name(), item.quantity());
@@ -52,7 +48,6 @@ public class InventoryController {
     }
 
     @GetMapping("/slow")
-    @MonitoredEndpoint
     public List<Item> getSlow() throws InterruptedException {
         log.info("GET /api/inventory/slow — simulating slow response");
         Thread.sleep(500);

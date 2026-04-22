@@ -1,5 +1,6 @@
 package com.nmontytskyi.monitoring.server.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,12 +28,34 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorBody(ex.getMessage()));
     }
 
+    /**
+     * Handles {@link MethodArgumentNotValidException} thrown by Spring MVC when
+     * {@code @Valid @RequestBody} validation fails on a POJO request body.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         List<String> violations = ex.getBindingResult().getFieldErrors().stream()
                 .map(f -> f.getField() + ": " + f.getDefaultMessage())
                 .toList();
         log.warn("Validation failed: {}", violations);
+        return ResponseEntity.badRequest().body(Map.of(
+                "error", "Validation failed",
+                "violations", violations,
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
+    /**
+     * Handles {@link ConstraintViolationException} thrown by
+     * {@code MethodValidationInterceptor} when {@code @Validated} class-level
+     * validation fails (e.g. for method parameters like {@code List<@Valid T>}).
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+        List<String> violations = ex.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .toList();
+        log.warn("Constraint violation: {}", violations);
         return ResponseEntity.badRequest().body(Map.of(
                 "error", "Validation failed",
                 "violations", violations,
