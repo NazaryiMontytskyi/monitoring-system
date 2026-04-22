@@ -1,6 +1,7 @@
 package com.nmontytskyi.monitoring.server.service;
 
 import com.nmontytskyi.monitoring.detector.AnomalyDetector;
+import com.nmontytskyi.monitoring.model.HealthStatus;
 import com.nmontytskyi.monitoring.server.alert.AlertEvaluationService;
 import com.nmontytskyi.monitoring.server.dto.request.MetricSnapshotRequest;
 import com.nmontytskyi.monitoring.server.dto.response.AggregateMetricsResponse;
@@ -40,6 +41,10 @@ public class MetricsPersistenceService {
         RegisteredServiceEntity service = serviceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new ServiceNotFoundException(request.getServiceId()));
 
+        boolean isErrorRecord = request.getStatus() == HealthStatus.DOWN
+                || request.getStatus() == HealthStatus.DEGRADED
+                || request.getErrorMessage() != null;
+
         MetricRecordEntity entity = MetricRecordEntity.builder()
                 .service(service)
                 .endpoint(request.getEndpoint())
@@ -49,6 +54,7 @@ public class MetricsPersistenceService {
                 .heapUsedMb(request.getHeapUsedMb())
                 .heapMaxMb(request.getHeapMaxMb())
                 .errorMessage(request.getErrorMessage())
+                .errorFlag(isErrorRecord)
                 .source(source)
                 .recordedAt(LocalDateTime.now())
                 .build();
