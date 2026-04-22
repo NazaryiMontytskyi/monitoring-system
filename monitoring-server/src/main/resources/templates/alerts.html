@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Alerts', ~{::main})}">
+<head></head>
+<body>
+<main class="p-6 flex flex-col gap-6">
+
+    <h1 class="text-2xl font-semibold" style="color:#f1f5f9;">Alerts</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+        <!-- Rules (left, 60%) -->
+        <div class="lg:col-span-3 flex flex-col gap-4">
+
+            <!-- Rules table -->
+            <div class="rounded-xl shadow-lg overflow-hidden" style="background-color:#1e293b;">
+                <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:#334155;">
+                    <h2 class="text-base font-semibold" style="color:#f1f5f9;">Alert Rules</h2>
+                    <button onclick="document.getElementById('addRuleForm').classList.toggle('hidden')"
+                            class="px-3 py-1.5 rounded-lg text-xs font-medium"
+                            style="background-color:#3b82f6;color:#fff;">+ Add Rule</button>
+                </div>
+
+                <div th:if="${#lists.isEmpty(rules)}" class="p-6 text-sm text-center" style="color:#94a3b8;">
+                    No rules configured. Add your first alert rule.
+                </div>
+
+                <table th:if="${!#lists.isEmpty(rules)}" class="w-full text-sm">
+                    <thead>
+                        <tr style="background-color:#0f172a;">
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Service</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Metric</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Condition</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Cooldown</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Enabled</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="rule, iter : ${rules}"
+                            th:style="${iter.odd} ? 'background-color:#1e293b;' : 'background-color:#162032;'">
+                            <td class="px-4 py-3 font-medium" style="color:#f1f5f9;"
+                                th:text="${serviceNames[rule.serviceId] ?: rule.serviceId}">—</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded text-xs font-medium"
+                                      style="background-color:rgba(59,130,246,0.15);color:#3b82f6;"
+                                      th:text="${rule.metricType}">TYPE</span>
+                            </td>
+                            <td class="px-4 py-3 font-mono text-xs" style="color:#f1f5f9;">
+                                <span th:text="${rule.comparator == T(com.nmontytskyi.monitoring.server.entity.AlertRuleEntity.Comparator).GT ? '>' : '<'}">></span>
+                                <span th:text="${#numbers.formatDecimal(rule.threshold,1,0)}">0</span>
+                            </td>
+                            <td class="px-4 py-3 text-xs" style="color:#94a3b8;"
+                                th:text="${rule.cooldownMinutes} + ' min'">15 min</td>
+                            <td class="px-4 py-3">
+                                <span th:if="${rule.enabled}"
+                                      class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                      style="background-color:rgba(34,197,94,0.15);color:#22c55e;">ON</span>
+                                <span th:if="${!rule.enabled}"
+                                      class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                      style="background-color:rgba(107,114,128,0.15);color:#6b7280;">OFF</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <form th:action="@{/alerts/rules/{id}/delete(id=${rule.id})}" method="post">
+                                    <button type="submit"
+                                            class="p-1.5 rounded-lg transition-colors hover:brightness-110"
+                                            style="background-color:rgba(239,68,68,0.15);color:#ef4444;"
+                                            title="Delete rule">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Add rule form (hidden by default) -->
+            <div id="addRuleForm" class="hidden rounded-xl shadow-lg p-6" style="background-color:#1e293b;">
+                <h3 class="text-sm font-semibold mb-4" style="color:#f1f5f9;">New Alert Rule</h3>
+                <form th:action="@{/alerts/rules}" method="post" class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Service</label>
+                        <select name="serviceId" required
+                                class="w-full px-3 py-2 rounded-lg text-sm border"
+                                style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                            <option value="">— Select —</option>
+                            <option th:each="svc : ${services}"
+                                    th:value="${svc.id}"
+                                    th:text="${svc.name}">service</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Metric Type</label>
+                        <select name="metricType" required
+                                class="w-full px-3 py-2 rounded-lg text-sm border"
+                                style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                            <option value="RESPONSE_TIME_AVG">Response Time (Avg)</option>
+                            <option value="UPTIME_PERCENT">Uptime %</option>
+                            <option value="ERROR_RATE">Error Rate</option>
+                            <option value="CPU_USAGE">CPU Usage</option>
+                            <option value="STATUS_DOWN">Status Down</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Comparator</label>
+                        <select name="comparator" required
+                                class="w-full px-3 py-2 rounded-lg text-sm border"
+                                style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                            <option value="GT">greater than (&gt;)</option>
+                            <option value="LT">less than (&lt;)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Threshold</label>
+                        <input type="number" name="threshold" step="any" required
+                               placeholder="e.g. 1000"
+                               class="w-full px-3 py-2 rounded-lg text-sm border"
+                               style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Cooldown (minutes)</label>
+                        <input type="number" name="cooldownMinutes" value="15" min="1"
+                               class="w-full px-3 py-2 rounded-lg text-sm border"
+                               style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                    </div>
+                    <div class="flex items-center gap-2 pt-4">
+                        <input type="checkbox" name="enabled" id="enabledCheck" value="true" checked
+                               class="w-4 h-4 rounded">
+                        <label for="enabledCheck" class="text-sm" style="color:#f1f5f9;">Enabled</label>
+                    </div>
+                    <div class="col-span-2 flex gap-3 justify-end pt-2">
+                        <button type="button"
+                                onclick="document.getElementById('addRuleForm').classList.add('hidden')"
+                                class="px-4 py-2 rounded-lg text-sm font-medium"
+                                style="background-color:#334155;color:#94a3b8;">Cancel</button>
+                        <button type="submit"
+                                class="px-4 py-2 rounded-lg text-sm font-medium"
+                                style="background-color:#3b82f6;color:#fff;">Create Rule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recent events (right, 40%) -->
+        <div class="lg:col-span-2">
+            <div class="rounded-xl shadow-lg overflow-hidden" style="background-color:#1e293b;">
+                <div class="px-6 py-4 border-b" style="border-color:#334155;">
+                    <h2 class="text-base font-semibold" style="color:#f1f5f9;">Recent Events</h2>
+                </div>
+                <div th:if="${#lists.isEmpty(events)}" class="p-6 text-sm text-center" style="color:#94a3b8;">
+                    No alert events yet.
+                </div>
+                <ul th:if="${!#lists.isEmpty(events)}" class="divide-y max-h-[600px] overflow-y-auto" style="border-color:#334155;">
+                    <li th:each="event : ${events}" class="px-5 py-3">
+                        <div class="flex items-start gap-2">
+                            <span class="w-2 h-2 rounded-full mt-1 flex-shrink-0"
+                                  style="background-color:#ef4444;"></span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium truncate" style="color:#f1f5f9;"
+                                   th:text="${event.message}">message</p>
+                                <p class="text-xs mt-0.5" style="color:#94a3b8;"
+                                   th:text="${#temporals.format(event.firedAt,'HH:mm:ss dd/MM/yyyy')}">time</p>
+                                <p th:if="${event.notificationSent}"
+                                   class="text-xs mt-0.5" style="color:#3b82f6;">📧 Notification sent</p>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>

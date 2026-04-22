@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${service.name}, ~{::main})}">
+<head></head>
+<body>
+<main class="p-6 flex flex-col gap-6">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+        <a th:href="@{/}" class="text-sm transition-colors hover:brightness-110" style="color:#94a3b8;">← Dashboard</a>
+        <span style="color:#475569;">/</span>
+        <h1 class="text-2xl font-semibold" style="color:#f1f5f9;" th:text="${service.name}">service</h1>
+        <th:block th:replace="~{fragments/status-badge :: badge(${service.status})}"/>
+        <span class="ml-auto text-xs" style="color:#94a3b8;">
+            Last seen:
+            <span th:if="${service.lastSeenAt != null}"
+                  th:text="${#temporals.format(service.lastSeenAt,'yyyy-MM-dd HH:mm:ss')}">—</span>
+            <span th:if="${service.lastSeenAt == null}">—</span>
+        </span>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="rounded-xl p-5 shadow-lg" style="background-color:#1e293b;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Avg Response Time</p>
+            <p class="text-3xl font-bold mt-1" style="color:#3b82f6;">
+                <span th:text="${#numbers.formatDecimal(aggregate.avgResponseTimeMs,1,0)}">0</span>
+                <span class="text-base font-normal" style="color:#94a3b8;"> ms</span>
+            </p>
+        </div>
+        <div class="rounded-xl p-5 shadow-lg" style="background-color:#1e293b;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">P95</p>
+            <p class="text-3xl font-bold mt-1" style="color:#f59e0b;">
+                <span th:text="${sla.p95ResponseTimeMs}">0</span>
+                <span class="text-base font-normal" style="color:#94a3b8;"> ms</span>
+            </p>
+        </div>
+        <div class="rounded-xl p-5 shadow-lg" style="background-color:#1e293b;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">P99</p>
+            <p class="text-3xl font-bold mt-1" style="color:#ef4444;">
+                <span th:text="${sla.p99ResponseTimeMs}">0</span>
+                <span class="text-base font-normal" style="color:#94a3b8;"> ms</span>
+            </p>
+        </div>
+        <div class="rounded-xl p-5 shadow-lg" style="background-color:#1e293b;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Uptime</p>
+            <p class="text-3xl font-bold mt-1"
+               th:style="${aggregate.uptimePercent >= 99} ? 'color:#22c55e;' : 'color:#ef4444;'">
+                <span th:text="${#numbers.formatDecimal(aggregate.uptimePercent,1,1)}">0</span>
+                <span class="text-base font-normal" style="color:#94a3b8;">%</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- SLA Compliance -->
+    <div class="rounded-xl shadow-lg p-6" style="background-color:#1e293b;">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-semibold" style="color:#f1f5f9;">SLA Status</h2>
+            <span class="text-2xl font-bold"
+                  th:style="${sla.slaBreached} ? 'color:#ef4444;' : 'color:#22c55e;'"
+                  th:text="${#numbers.formatDecimal(sla.compliancePercent,1,1)} + '%'">100%</span>
+        </div>
+
+        <!-- Uptime bar -->
+        <div class="mb-4">
+            <div class="flex justify-between text-xs mb-1" style="color:#94a3b8;">
+                <span>Uptime</span>
+                <span>
+                    <span th:text="${#numbers.formatDecimal(sla.actualUptimePercent,1,2)}">0</span>%
+                    / required
+                    <span th:text="${#numbers.formatDecimal(sla.sla.uptimePercent,1,1)}">99.9</span>%
+                    <span th:text="${sla.uptimeMet} ? '✅' : '❌'"></span>
+                </span>
+            </div>
+            <div class="w-full rounded-full h-2" style="background-color:#334155;">
+                <div class="h-2 rounded-full transition-all"
+                     th:with="pctUp=${sla.actualUptimePercent > 100 ? 100.0 : sla.actualUptimePercent}"
+                     th:style="'width:' + ${#numbers.formatDecimal(pctUp,1,1)} + '%;background-color:' + (${sla.uptimeMet} ? '#22c55e' : '#ef4444') + ';'"></div>
+            </div>
+        </div>
+
+        <!-- Avg RT bar -->
+        <div class="mb-4">
+            <div class="flex justify-between text-xs mb-1" style="color:#94a3b8;">
+                <span>Avg Response Time</span>
+                <span>
+                    <span th:text="${#numbers.formatDecimal(sla.actualAvgResponseTimeMs,1,0)}">0</span> ms
+                    / max <span th:text="${sla.sla.maxResponseTimeMs}">1000</span> ms
+                    <span th:text="${sla.responseTimeMet} ? '✅' : '❌'"></span>
+                </span>
+            </div>
+            <div class="w-full rounded-full h-2" style="background-color:#334155;">
+                <div class="h-2 rounded-full transition-all"
+                     th:with="rawPct=${sla.sla.maxResponseTimeMs > 0 ? sla.actualAvgResponseTimeMs * 100.0 / sla.sla.maxResponseTimeMs : 0.0}, pct=${rawPct > 100.0 ? 100.0 : rawPct}"
+                     th:style="'width:' + ${#numbers.formatDecimal(pct,1,1)} + '%;background-color:' + (${sla.responseTimeMet} ? '#22c55e' : '#ef4444') + ';'"></div>
+            </div>
+        </div>
+
+        <!-- Error rate bar -->
+        <div>
+            <div class="flex justify-between text-xs mb-1" style="color:#94a3b8;">
+                <span>Error Rate</span>
+                <span>
+                    <span th:text="${#numbers.formatDecimal(sla.actualErrorRatePercent,1,2)}">0</span>%
+                    / max <span th:text="${#numbers.formatDecimal(sla.sla.maxErrorRatePercent,1,1)}">5.0</span>%
+                    <span th:text="${sla.errorRateMet} ? '✅' : '❌'"></span>
+                </span>
+            </div>
+            <div class="w-full rounded-full h-2" style="background-color:#334155;">
+                <div class="h-2 rounded-full transition-all"
+                     th:with="rawPct2=${sla.sla.maxErrorRatePercent > 0 ? sla.actualErrorRatePercent * 100.0 / sla.sla.maxErrorRatePercent : 0.0}, pct=${rawPct2 > 100.0 ? 100.0 : rawPct2}"
+                     th:style="'width:' + ${#numbers.formatDecimal(pct,1,1)} + '%;background-color:' + (${sla.errorRateMet} ? '#22c55e' : '#ef4444') + ';'"></div>
+            </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t flex justify-end" style="border-color:#334155;">
+            <a th:href="@{/services/{id}/sla(id=${service.id})}"
+               class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+               style="background-color:#3b82f6;color:#fff;">Full SLA Report →</a>
+        </div>
+    </div>
+
+    <!-- Service info -->
+    <div class="rounded-xl shadow-lg p-6" style="background-color:#1e293b;">
+        <h2 class="text-base font-semibold mb-3" style="color:#f1f5f9;">Service Info</h2>
+        <dl class="grid grid-cols-2 gap-3 text-sm">
+            <div>
+                <dt class="font-medium" style="color:#94a3b8;">Host</dt>
+                <dd style="color:#f1f5f9;" th:text="${service.host + ':' + service.port}">—</dd>
+            </div>
+            <div>
+                <dt class="font-medium" style="color:#94a3b8;">Base URL</dt>
+                <dd style="color:#f1f5f9;" th:text="${service.baseUrl}">—</dd>
+            </div>
+            <div>
+                <dt class="font-medium" style="color:#94a3b8;">Actuator URL</dt>
+                <dd style="color:#f1f5f9;" th:text="${service.actuatorUrl}">—</dd>
+            </div>
+            <div>
+                <dt class="font-medium" style="color:#94a3b8;">Registered</dt>
+                <dd style="color:#f1f5f9;">
+                    <span th:if="${service.registeredAt != null}"
+                          th:text="${#temporals.format(service.registeredAt,'yyyy-MM-dd HH:mm')}">—</span>
+                    <span th:if="${service.registeredAt == null}">—</span>
+                </dd>
+            </div>
+        </dl>
+    </div>
+
+</main>
+</body>
+</html>

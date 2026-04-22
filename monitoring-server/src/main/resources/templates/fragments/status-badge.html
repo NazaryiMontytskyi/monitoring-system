@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Usage: <th:block th:replace="~{fragments/status-badge :: badge(${service.status})}"/>
+-->
+<span th:fragment="badge(status)"
+      th:with="sn=${status.name()}"
+      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+      th:style="${sn == 'UP'}      ? 'background-color:rgba(34,197,94,0.15);color:#22c55e;' :
+                (${sn == 'DOWN'}   ? 'background-color:rgba(239,68,68,0.15);color:#ef4444;'  :
+                (${sn == 'DEGRADED'} ? 'background-color:rgba(245,158,11,0.15);color:#f59e0b;' :
+                                       'background-color:rgba(107,114,128,0.15);color:#6b7280;'))">
+    <span th:if="${sn == 'UP'}"
+          class="pulse-dot"
+          style="width:6px;height:6px;border-radius:50%;background-color:#22c55e;"></span>
+    <span th:if="${sn == 'DOWN'}"
+          class="pulse-dot"
+          style="width:6px;height:6px;border-radius:50%;background-color:#ef4444;"></span>
+    <span th:text="${sn}">STATUS</span>
+</span>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Dashboard', ~{::main})}">
+<head></head>
+<body>
+<main class="p-6 flex flex-col gap-6">
+
+    <!-- Header row -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold" style="color:#f1f5f9;">Dashboard</h1>
+        <span class="text-sm" style="color:#94a3b8;" id="refresh-countdown">Auto-refresh: 30s ↻</span>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="rounded-xl p-5 border-l-4 shadow-lg" style="background-color:#1e293b;border-left-color:#3b82f6;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Total Services</p>
+            <p class="text-3xl font-bold mt-1" style="color:#f1f5f9;" th:text="${summary.totalServices}">0</p>
+        </div>
+        <div class="rounded-xl p-5 border-l-4 shadow-lg" style="background-color:#1e293b;border-left-color:#22c55e;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Up</p>
+            <p class="text-3xl font-bold mt-1" style="color:#22c55e;" th:text="${summary.healthyCount}">0</p>
+        </div>
+        <div class="rounded-xl p-5 border-l-4 shadow-lg" style="background-color:#1e293b;border-left-color:#f59e0b;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Degraded</p>
+            <p class="text-3xl font-bold mt-1" style="color:#f59e0b;" th:text="${summary.degradedCount}">0</p>
+        </div>
+        <div class="rounded-xl p-5 border-l-4 shadow-lg" style="background-color:#1e293b;border-left-color:#ef4444;">
+            <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Down</p>
+            <p class="text-3xl font-bold mt-1" style="color:#ef4444;" th:text="${summary.downCount}">0</p>
+        </div>
+    </div>
+
+    <!-- Middle row: table + chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Service status table -->
+        <div class="rounded-xl shadow-lg overflow-hidden" style="background-color:#1e293b;">
+            <div class="px-6 py-4 border-b" style="border-color:#334155;">
+                <h2 class="text-base font-semibold" style="color:#f1f5f9;">Service Status</h2>
+            </div>
+            <div th:if="${#lists.isEmpty(summary.services)}" class="p-6 text-sm text-center" style="color:#94a3b8;">
+                No services registered yet.
+            </div>
+            <table th:if="${!#lists.isEmpty(summary.services)}" class="w-full text-sm">
+                <thead>
+                    <tr style="background-color:#0f172a;">
+                        <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Name</th>
+                        <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Status</th>
+                        <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Avg RT</th>
+                        <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="svc, iter : ${summary.services}"
+                        th:style="${iter.odd} ? 'background-color:#1e293b;' : 'background-color:#162032;'"
+                        class="transition-colors hover:brightness-110">
+                        <td class="px-4 py-3 font-medium" style="color:#f1f5f9;" th:text="${svc.name}">service</td>
+                        <td class="px-4 py-3">
+                            <th:block th:replace="~{fragments/status-badge :: badge(${svc.status})}"/>
+                        </td>
+                        <td class="px-4 py-3" style="color:#94a3b8;">
+                            <span th:if="${svc.avgResponseTimeMs != null}"
+                                  th:text="${#numbers.formatDecimal(svc.avgResponseTimeMs, 1, 0)} + ' ms'">— ms</span>
+                            <span th:if="${svc.avgResponseTimeMs == null}" style="color:#475569;">—</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <a th:href="@{/services/{id}(id=${svc.id})}"
+                               class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                               style="background-color:#3b82f6;color:#fff;">Details</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Response time bar chart -->
+        <div class="rounded-xl shadow-lg p-6" style="background-color:#1e293b;">
+            <h2 class="text-base font-semibold mb-4" style="color:#f1f5f9;">Response Time Overview</h2>
+            <div th:if="${#lists.isEmpty(summary.services)}" class="flex items-center justify-center h-40 text-sm" style="color:#94a3b8;">
+                No data available
+            </div>
+            <div th:if="${!#lists.isEmpty(summary.services)}" style="position:relative;height:220px;">
+                <canvas id="rtBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent alerts -->
+    <div class="rounded-xl shadow-lg overflow-hidden" style="background-color:#1e293b;">
+        <div class="px-6 py-4 border-b" style="border-color:#334155;">
+            <h2 class="text-base font-semibold" style="color:#f1f5f9;">Recent Alerts</h2>
+        </div>
+        <div th:if="${#lists.isEmpty(recentEvents)}" class="p-6 text-sm text-center" style="color:#94a3b8;">
+            No recent alerts.
+        </div>
+        <ul th:if="${!#lists.isEmpty(recentEvents)}" class="divide-y" style="border-color:#334155;">
+            <li th:each="event : ${recentEvents}" class="px-6 py-3 flex items-start gap-3">
+                <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background-color:#ef4444;"></span>
+                <div>
+                    <p class="text-sm" style="color:#f1f5f9;" th:text="${event.message}">message</p>
+                    <p class="text-xs mt-0.5" style="color:#94a3b8;"
+                       th:text="${#temporals.format(event.firedAt,'yyyy-MM-dd HH:mm:ss')}">time</p>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Chart.js data -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        window._chartLabels  = /*[[${chartLabels}]]*/  [];
+        window._chartValues  = /*[[${chartValues}]]*/  [];
+        window._chartStatuses = /*[[${chartStatuses}]]*/ [];
+        /*]]>*/
+    </script>
+</main>
+</body>
+</html>
