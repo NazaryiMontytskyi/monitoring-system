@@ -21,10 +21,29 @@
     <modules>
         <module>demo-order-service</module>
         <module>demo-inventory-service</module>
+        <module>demo-payment-service</module>
     </modules>
 
     <properties>
         <java.version>21</java.version>
         <monitoring.starter.version>1.0.0-SNAPSHOT</monitoring.starter.version>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

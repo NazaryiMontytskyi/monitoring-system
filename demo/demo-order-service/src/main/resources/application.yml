@@ -1,0 +1,13 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: order-service
+
+monitoring:
+  server:
+    url: http://localhost:8080
+  service:
+    base-url: http://localhost:8082
+    actuator-url: http://localhost:8082/actuator
