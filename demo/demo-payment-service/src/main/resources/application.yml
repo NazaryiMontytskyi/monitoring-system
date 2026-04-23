@@ -1,0 +1,13 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: payment-service
+
+monitoring:
+  server:
+    url: http://localhost:8080
+  service:
+    base-url: http://localhost:8083
+    actuator-url: http://localhost:8083/actuator
