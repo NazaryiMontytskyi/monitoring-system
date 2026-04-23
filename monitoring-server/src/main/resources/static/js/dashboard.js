@@ -1,9 +1,9 @@
-/* ── Dashboard auto-refresh every 30 seconds ── */
+/* ── Dashboard auto-refresh every 7 seconds ── */
 
 (function () {
     'use strict';
 
-    var REFRESH_INTERVAL = 30;
+    var REFRESH_INTERVAL = 7;
 
     function isDashboard() {
         return window.location.pathname === '/';

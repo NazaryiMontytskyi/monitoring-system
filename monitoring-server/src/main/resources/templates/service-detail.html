@@ -147,6 +147,49 @@
         </dl>
     </div>
 
+    <!-- Live Metrics -->
+    <div id="live-metrics-section" th:attr="data-service-id=${service.id}">
+        <h2 class="text-base font-semibold mb-3" style="color:#f1f5f9;">Live Metrics</h2>
+
+        <!-- Row 1: Response Time + CPU -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+                <p class="text-sm mb-2" style="color:#94a3b8;">Response Time (ms)</p>
+                <div style="height:180px;"><canvas id="chart-response-time"></canvas></div>
+            </div>
+            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+                <p class="text-sm mb-2" style="color:#94a3b8;">CPU Usage (%)</p>
+                <div style="height:180px;"><canvas id="chart-cpu"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Row 2: Heap + Non-Heap -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+                <p class="text-sm mb-2" style="color:#94a3b8;">Heap Memory (MB)</p>
+                <div style="height:180px;"><canvas id="chart-heap"></canvas></div>
+            </div>
+            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+                <p class="text-sm mb-2" style="color:#94a3b8;">Non-Heap Memory (MB)</p>
+                <div style="height:180px;"><canvas id="chart-non-heap"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Row 3: Threads + GC -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+                <p class="text-sm mb-2" style="color:#94a3b8;">JVM Threads</p>
+                <div style="height:180px;"><canvas id="chart-threads"></canvas></div>
+            </div>
+            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+                <p class="text-sm mb-2" style="color:#94a3b8;">GC Pause (ms)</p>
+                <div style="height:180px;"><canvas id="chart-gc"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/service-charts.js}" defer></script>
+
 </main>
 </body>
 </html>

@@ -137,6 +137,26 @@ public class MetricRecordEntity {
     @Builder.Default
     private MetricSource source = MetricSource.PULL;
 
+    /** Non-heap memory used in MB (PULL only). */
+    @Column(name = "non_heap_used_mb")
+    private Long nonHeapUsedMb;
+
+    /** Number of live JVM threads (PULL only). */
+    @Column(name = "threads_live")
+    private Integer threadsLive;
+
+    /** Number of daemon JVM threads (PULL only). */
+    @Column(name = "threads_daemon")
+    private Integer threadsDaemon;
+
+    /** Total GC pause time in milliseconds (PULL only). */
+    @Column(name = "gc_pause_ms")
+    private Double gcPauseMs;
+
+    /** Process CPU usage percentage [0..100] (PULL only). */
+    @Column(name = "process_cpu_usage")
+    private Double processCpuUsage;
+
     /** Timestamp when this measurement was recorded. */
     @Column(name = "recorded_at", nullable = false)
     private LocalDateTime recordedAt;

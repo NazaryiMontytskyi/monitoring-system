@@ -47,6 +47,11 @@ public class MetricsPollingScheduler {
         Optional<Double> heapUsed = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.memory.used");
         Optional<Double> heapMax = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.memory.max");
         Optional<Double> cpuUsage = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "system.cpu.usage");
+        Optional<Double> nonHeapUsed = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.memory.used", "area:nonheap");
+        Optional<Double> threadsLive = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.threads.live");
+        Optional<Double> threadsDaemon = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.threads.daemon");
+        Optional<Double> gcPause = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.gc.pause", "statistic:TOTAL_TIME");
+        Optional<Double> processCpu = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "process.cpu.usage");
 
         MetricSnapshotRequest request = MetricSnapshotRequest.builder()
                 .serviceId(service.getId())
@@ -54,8 +59,13 @@ public class MetricsPollingScheduler {
                 .responseTimeMs(responseTimeMs)
                 .status(status)
                 .cpuUsage(cpuUsage.map(v -> v * 100).orElse(null))
-                .heapUsedMb(heapUsed.map(v -> (long) (v / 1024 / 1024)).orElse(null))
-                .heapMaxMb(heapMax.map(v -> (long) (v / 1024 / 1024)).orElse(null))
+                .heapUsedMb(heapUsed.map(v -> (long) (v / 1_048_576)).orElse(null))
+                .heapMaxMb(heapMax.map(v -> (long) (v / 1_048_576)).orElse(null))
+                .nonHeapUsedMb(nonHeapUsed.map(v -> (long) (v / 1_048_576)).orElse(null))
+                .threadsLive(threadsLive.map(v -> v.intValue()).orElse(null))
+                .threadsDaemon(threadsDaemon.map(v -> v.intValue()).orElse(null))
+                .gcPauseMs(gcPause.map(v -> v * 1000.0).orElse(null))
+                .processCpuUsage(processCpu.map(v -> v * 100.0).orElse(null))
                 .errorMessage(status == HealthStatus.DOWN ? "Service unavailable" : null)
                 .build();
 

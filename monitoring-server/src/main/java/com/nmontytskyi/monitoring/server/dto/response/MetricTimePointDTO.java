@@ -12,24 +12,17 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MetricRecordResponse {
+public class MetricTimePointDTO {
 
-    private Long id;
-    private Long serviceId;
-    private String endpoint;
+    private LocalDateTime recordedAt;
     private long responseTimeMs;
     private HealthStatus status;
     private Double cpuUsage;
     private Long heapUsedMb;
     private Long heapMaxMb;
-    private String errorMessage;
     private Long nonHeapUsedMb;
     private Integer threadsLive;
     private Integer threadsDaemon;
     private Double gcPauseMs;
     private Double processCpuUsage;
-    private boolean anomaly;
-    private double zScore;
-    private String source;
-    private LocalDateTime recordedAt;
 }
