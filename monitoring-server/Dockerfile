@@ -20,6 +20,8 @@ RUN mvn clean package -pl monitoring-core,monitoring-spring-boot-starter,monitor
 
 FROM eclipse-temurin:21-jre-alpine AS runtime
 
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 COPY --from=builder /build/monitoring-server/target/*.jar app.jar

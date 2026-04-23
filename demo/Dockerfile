@@ -8,6 +8,7 @@ WORKDIR /build
 COPY pom.xml .
 COPY monitoring-core/pom.xml monitoring-core/pom.xml
 COPY monitoring-spring-boot-starter/pom.xml monitoring-spring-boot-starter/pom.xml
+COPY monitoring-server/pom.xml monitoring-server/pom.xml
 
 # Copy demo poms for layer caching
 COPY demo/pom.xml demo/pom.xml

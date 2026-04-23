@@ -32,4 +32,14 @@ public class MetricSnapshotRequest {
     private Long heapMaxMb;
 
     private String errorMessage;
+
+    private Long nonHeapUsedMb;
+
+    private Integer threadsLive;
+
+    private Integer threadsDaemon;
+
+    private Double gcPauseMs;
+
+    private Double processCpuUsage;
 }

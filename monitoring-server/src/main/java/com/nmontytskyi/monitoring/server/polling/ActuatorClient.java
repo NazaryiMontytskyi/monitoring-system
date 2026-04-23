@@ -64,4 +64,23 @@ public class ActuatorClient {
             return Optional.empty();
         }
     }
+
+    public Optional<Double> fetchMetricValue(String actuatorUrl, String metricName, String tag) {
+        if (actuatorUrl == null || actuatorUrl.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            ActuatorMetricsResponse response = restClient.get()
+                    .uri(actuatorUrl + "/metrics/" + metricName + "?tag=" + tag)
+                    .retrieve()
+                    .body(ActuatorMetricsResponse.class);
+            if (response == null || response.getMeasurements() == null || response.getMeasurements().isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(response.getValue());
+        } catch (Exception e) {
+            log.warn("Failed to fetch metric {} [tag={}] from {}: {}", metricName, tag, actuatorUrl, e.getMessage());
+            return Optional.empty();
+        }
+    }
 }
