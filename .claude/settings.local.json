@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(mvn clean *)",
-      "Bash(mvn verify *)"
+      "Bash(mvn verify *)",
+      "Bash(python -c ' *)",
+      "Bash(python load_test.py --list-scenarios)"
     ]
   }
 }

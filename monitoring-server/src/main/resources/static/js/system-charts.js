@@ -11,6 +11,7 @@
     var YELLOW = '#f59e0b';
     var BLUE   = '#3b82f6';
     var RED    = '#ef4444';
+    var ORANGE = '#f97316';
 
     function commonOptions() {
         return {
@@ -61,6 +62,21 @@
         };
     }
 
+    /* Anomaly bar chart: bar color intensifies with count, red outline for any bar > 0. */
+    function makeAnomalyDataset(data) {
+        return {
+            label: 'Anomalies',
+            data: data || [],
+            backgroundColor: (data || []).map(function (v) {
+                return v > 0 ? 'rgba(239,68,68,0.7)' : 'rgba(239,68,68,0.15)';
+            }),
+            borderColor: (data || []).map(function (v) {
+                return v > 0 ? RED : 'rgba(239,68,68,0.3)';
+            }),
+            borderWidth: 1
+        };
+    }
+
     function initCharts() {
         function ctx(id) {
             var canvas = document.getElementById(id);
@@ -94,6 +110,14 @@
             data: { labels: [], datasets: [makeLineDataset('Avg CPU Usage (%)', YELLOW, [])] },
             options: commonOptions()
         });
+
+        var anomalyOpts = commonOptions();
+        anomalyOpts.scales.y.ticks.stepSize = 1;
+        charts.anomalies = new Chart(ctx('sys-chart-anomalies'), {
+            type: 'bar',
+            data: { labels: [], datasets: [makeAnomalyDataset([])] },
+            options: anomalyOpts
+        });
     }
 
     function fmtTime(isoStr) {
@@ -110,22 +134,46 @@
         chart.update('none');
     }
 
+    /* Anomaly chart needs per-bar color recomputation on each update. */
+    function updateAnomalyChart(labels, counts) {
+        charts.anomalies.data.labels = labels;
+        var ds = charts.anomalies.data.datasets[0];
+        ds.data = counts;
+        ds.backgroundColor = counts.map(function (v) {
+            return v > 0 ? 'rgba(239,68,68,0.7)' : 'rgba(239,68,68,0.15)';
+        });
+        ds.borderColor = counts.map(function (v) {
+            return v > 0 ? RED : 'rgba(239,68,68,0.3)';
+        });
+        charts.anomalies.update('none');
+
+        /* Update the anomaly summary counter badge if it exists. */
+        var total = counts.reduce(function (s, v) { return s + v; }, 0);
+        var badge = document.getElementById('sys-anomaly-total');
+        if (badge) {
+            badge.textContent = total;
+            badge.parentElement.style.display = total > 0 ? '' : 'none';
+        }
+    }
+
     function fetchAndRender() {
         fetch('/api/metrics/system/history?minutes=30&limit=60')
             .then(function (res) { return res.ok ? res.json() : []; })
             .then(function (points) {
                 if (!Array.isArray(points) || points.length === 0) return;
 
-                var labels   = points.map(function (p) { return fmtTime(p.recordedAt); });
-                var avgRt    = points.map(function (p) { return p.avgResponseTimeMs || 0; });
-                var avgCpu   = points.map(function (p) { return p.avgCpuUsage || 0; });
-                var up       = points.map(function (p) { return p.servicesUp || 0; });
-                var degraded = points.map(function (p) { return p.servicesDegraded || 0; });
-                var down     = points.map(function (p) { return p.servicesDown || 0; });
+                var labels       = points.map(function (p) { return fmtTime(p.recordedAt); });
+                var avgRt        = points.map(function (p) { return p.avgResponseTimeMs || 0; });
+                var avgCpu       = points.map(function (p) { return p.avgCpuUsage || 0; });
+                var up           = points.map(function (p) { return p.servicesUp || 0; });
+                var degraded     = points.map(function (p) { return p.servicesDegraded || 0; });
+                var down         = points.map(function (p) { return p.servicesDown || 0; });
+                var anomalyCounts = points.map(function (p) { return p.anomalyCount || 0; });
 
                 updateChart(charts.avgResponseTime, labels, [avgRt]);
                 updateChart(charts.statusOverview,  labels, [up, degraded, down]);
                 updateChart(charts.avgCpu,          labels, [avgCpu]);
+                updateAnomalyChart(labels, anomalyCounts);
             })
             .catch(function () {});
     }

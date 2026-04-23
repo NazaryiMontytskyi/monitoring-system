@@ -12,6 +12,11 @@
     var YELLOW = '#f59e0b';
     var BLUE   = '#3b82f6';
     var PURPLE = '#a855f7';
+    var RED    = '#ef4444';
+
+    /* Z-scores of the current window — kept in closure so the tooltip callback
+       can read them without extra fetch calls. */
+    var currentZScores = [];
 
     function commonOptions(titleText) {
         return {
@@ -39,6 +44,27 @@
         };
     }
 
+    /* Response-time chart has a custom tooltip that appends the z-score for
+       anomalous points. All other charts use the shared commonOptions. */
+    function responseTimeOptions() {
+        var opts = commonOptions('Response Time (ms)');
+        opts.plugins.tooltip = {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+                afterLabel: function (context) {
+                    if (context.datasetIndex !== 0) return null;
+                    var z = currentZScores[context.dataIndex];
+                    if (z != null && Math.abs(z) >= 2) {
+                        return '\u26A0 Anomaly  z\u202F=\u202F' + z.toFixed(2);
+                    }
+                    return null;
+                }
+            }
+        };
+        return opts;
+    }
+
     function makeLineDataset(label, color, data) {
         return {
             label: label,
@@ -60,8 +86,11 @@
 
         charts.responseTime = new Chart(ctx('chart-response-time'), {
             type: 'line',
-            data: { labels: [], datasets: [makeLineDataset('Response Time (ms)', GREEN, [])] },
-            options: commonOptions('Response Time (ms)')
+            data: {
+                labels: [],
+                datasets: [makeLineDataset('Response Time (ms)', GREEN, [])]
+            },
+            options: responseTimeOptions()
         });
 
         charts.cpu = new Chart(ctx('chart-cpu'), {
@@ -82,7 +111,7 @@
                 labels: [],
                 datasets: [
                     makeLineDataset('Heap Used (MB)', GREEN, []),
-                    makeLineDataset('Heap Max (MB)', YELLOW, [])
+                    makeLineDataset('Heap Max (MB)',  YELLOW, [])
                 ]
             },
             options: commonOptions('Heap Memory (MB)')
@@ -99,7 +128,7 @@
             data: {
                 labels: [],
                 datasets: [
-                    makeLineDataset('Live Threads', BLUE, []),
+                    makeLineDataset('Live Threads',   BLUE,   []),
                     makeLineDataset('Daemon Threads', PURPLE, [])
                 ]
             },
@@ -131,29 +160,73 @@
         chart.update('none');
     }
 
+    /* Update the response-time chart with per-point anomaly styling. */
+    function updateResponseTimeChart(labels, values, anomalies, zScores) {
+        currentZScores = zScores;
+
+        var ds = charts.responseTime.data.datasets[0];
+        charts.responseTime.data.labels = labels;
+        ds.data = values;
+
+        ds.pointBackgroundColor = anomalies.map(function (a) {
+            return a ? RED : GREEN;
+        });
+        ds.pointBorderColor = anomalies.map(function (a) {
+            return a ? RED : GREEN;
+        });
+        ds.pointRadius = anomalies.map(function (a) {
+            return a ? 7 : 2;
+        });
+        ds.pointHoverRadius = anomalies.map(function (a) {
+            return a ? 9 : 4;
+        });
+        /* Keep the line itself green; anomalous segments turn red via point color. */
+        ds.borderColor = GREEN;
+
+        charts.responseTime.update('none');
+    }
+
+    /* Show / hide the anomaly banner above the charts. */
+    function updateAnomalyBanner(count) {
+        var banner = document.getElementById('anomaly-banner');
+        if (!banner) return;
+        var countEl = document.getElementById('anomaly-banner-count');
+        if (count > 0) {
+            if (countEl) countEl.textContent = count;
+            banner.classList.remove('hidden');
+        } else {
+            banner.classList.add('hidden');
+        }
+    }
+
     function fetchAndRender(serviceId) {
         fetch('/api/metrics/' + serviceId + '/history?minutes=30&limit=60')
             .then(function (res) { return res.ok ? res.json() : []; })
             .then(function (points) {
                 if (!Array.isArray(points) || points.length === 0) return;
 
-                var labels       = points.map(function (p) { return fmtTime(p.recordedAt); });
+                var labels        = points.map(function (p) { return fmtTime(p.recordedAt); });
                 var responseTimes = points.map(function (p) { return p.responseTimeMs; });
-                var cpuSystem    = points.map(function (p) { return orNull(p.cpuUsage); });
-                var cpuProcess   = points.map(function (p) { return orNull(p.processCpuUsage); });
-                var heapUsed     = points.map(function (p) { return orNull(p.heapUsedMb); });
-                var heapMax      = points.map(function (p) { return orNull(p.heapMaxMb); });
-                var nonHeap      = points.map(function (p) { return orNull(p.nonHeapUsedMb); });
-                var threadsLive  = points.map(function (p) { return orNull(p.threadsLive); });
+                var anomalies     = points.map(function (p) { return !!p.anomaly; });
+                var zScores       = points.map(function (p) { return p.zScore || 0; });
+                var cpuSystem     = points.map(function (p) { return orNull(p.cpuUsage); });
+                var cpuProcess    = points.map(function (p) { return orNull(p.processCpuUsage); });
+                var heapUsed      = points.map(function (p) { return orNull(p.heapUsedMb); });
+                var heapMax       = points.map(function (p) { return orNull(p.heapMaxMb); });
+                var nonHeap       = points.map(function (p) { return orNull(p.nonHeapUsedMb); });
+                var threadsLive   = points.map(function (p) { return orNull(p.threadsLive); });
                 var threadsDaemon = points.map(function (p) { return orNull(p.threadsDaemon); });
-                var gcPause      = points.map(function (p) { return orNull(p.gcPauseMs); });
+                var gcPause       = points.map(function (p) { return orNull(p.gcPauseMs); });
 
-                updateChart(charts.responseTime, labels, [responseTimes]);
-                updateChart(charts.cpu,          labels, [cpuSystem, cpuProcess]);
-                updateChart(charts.heap,         labels, [heapUsed, heapMax]);
-                updateChart(charts.nonHeap,      labels, [nonHeap]);
-                updateChart(charts.threads,      labels, [threadsLive, threadsDaemon]);
-                updateChart(charts.gc,           labels, [gcPause]);
+                updateResponseTimeChart(labels, responseTimes, anomalies, zScores);
+                updateChart(charts.cpu,       labels, [cpuSystem, cpuProcess]);
+                updateChart(charts.heap,      labels, [heapUsed, heapMax]);
+                updateChart(charts.nonHeap,   labels, [nonHeap]);
+                updateChart(charts.threads,   labels, [threadsLive, threadsDaemon]);
+                updateChart(charts.gc,        labels, [gcPause]);
+
+                var anomalyCount = anomalies.filter(function (a) { return a; }).length;
+                updateAnomalyBanner(anomalyCount);
             })
             .catch(function () {});
     }

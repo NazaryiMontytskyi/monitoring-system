@@ -113,7 +113,10 @@
             </div>
         </div>
 
-        <div class="mt-4 pt-4 border-t flex justify-end" style="border-color:#334155;">
+        <div class="mt-4 pt-4 border-t flex justify-end gap-3" style="border-color:#334155;">
+            <a th:href="@{/services/{id}/reports(id=${service.id})}"
+               class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+               style="background-color:#334155;color:#f1f5f9;">Reports</a>
             <a th:href="@{/services/{id}/sla(id=${service.id})}"
                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                style="background-color:#3b82f6;color:#fff;">Full SLA Report →</a>
@@ -149,7 +152,24 @@
 
     <!-- Live Metrics -->
     <div id="live-metrics-section" th:attr="data-service-id=${service.id}">
-        <h2 class="text-base font-semibold mb-3" style="color:#f1f5f9;">Live Metrics</h2>
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-semibold" style="color:#f1f5f9;">Live Metrics</h2>
+        </div>
+
+        <!-- Anomaly banner — shown by JS when anomalies exist in current window -->
+        <div id="anomaly-banner" class="hidden flex items-center gap-3 rounded-lg px-4 py-2 mb-4 text-sm"
+             style="background-color:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+            <span>
+                <span id="anomaly-banner-count" class="font-bold">0</span>
+                anomalous point(s) detected in the last 30 min —
+                red dots on the Response Time chart indicate statistical outliers
+                (|z|&nbsp;≥&nbsp;2)
+            </span>
+        </div>
 
         <!-- Row 1: Response Time + CPU -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">

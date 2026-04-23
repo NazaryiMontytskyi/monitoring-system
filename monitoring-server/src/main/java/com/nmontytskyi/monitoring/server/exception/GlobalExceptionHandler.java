@@ -28,6 +28,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorBody(ex.getMessage()));
     }
 
+    @ExceptionHandler(ReportGenerationException.class)
+    public ResponseEntity<Map<String, Object>> handleReportGeneration(ReportGenerationException ex) {
+        log.warn("Report generation failed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(errorBody(ex.getMessage()));
+    }
+
     /**
      * Handles {@link MethodArgumentNotValidException} thrown by Spring MVC when
      * {@code @Valid @RequestBody} validation fails on a POJO request body.

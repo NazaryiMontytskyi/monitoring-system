@@ -74,4 +74,14 @@ public class AlertEventEntity {
     @Column(name = "notification_sent", nullable = false)
     @Builder.Default
     private boolean notificationSent = false;
+
+    @Column(name = "predictive", nullable = false)
+    @Builder.Default
+    private boolean predictive = false;
+
+    @Column(name = "predicted_breach_at")
+    private LocalDateTime predictedBreachAt;
+
+    @Column(name = "confidence_score")
+    private Double confidenceScore;
 }

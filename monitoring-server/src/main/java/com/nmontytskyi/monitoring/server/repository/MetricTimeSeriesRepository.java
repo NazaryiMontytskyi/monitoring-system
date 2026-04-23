@@ -34,7 +34,8 @@ public interface MetricTimeSeriesRepository extends Repository<MetricRecordEntit
                 AVG(heap_used_mb)                          AS avg_heap,
                 SUM(CASE WHEN status = 'UP'       THEN 1 ELSE 0 END) AS up_cnt,
                 SUM(CASE WHEN status = 'DOWN'     THEN 1 ELSE 0 END) AS down_cnt,
-                SUM(CASE WHEN status = 'DEGRADED' THEN 1 ELSE 0 END) AS deg_cnt
+                SUM(CASE WHEN status = 'DEGRADED' THEN 1 ELSE 0 END) AS deg_cnt,
+                SUM(CASE WHEN anomaly = true      THEN 1 ELSE 0 END) AS anomaly_cnt
             FROM metric_records
             WHERE recorded_at >= :from
             GROUP BY DATE_TRUNC('minute', recorded_at)

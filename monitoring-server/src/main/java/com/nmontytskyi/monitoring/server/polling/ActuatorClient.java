@@ -60,11 +60,17 @@ public class ActuatorClient {
             }
             return Optional.of(response.getValue());
         } catch (Exception e) {
-            log.warn("Failed to fetch metric {} from {}: {}", metricName, actuatorUrl, e.getMessage());
+            log.debug("Metric {} not available from {}: {}", metricName, actuatorUrl, e.getMessage());
             return Optional.empty();
         }
     }
 
+    /**
+     * Fetches a metric filtered by a URL tag dimension (e.g. {@code area:nonheap}).
+     * Use this only for metrics where the tag is a real Micrometer tag key, not for
+     * timer statistics such as TOTAL_TIME / COUNT / MAX — use
+     * {@link #fetchTimerStatistic} for those.
+     */
     public Optional<Double> fetchMetricValue(String actuatorUrl, String metricName, String tag) {
         if (actuatorUrl == null || actuatorUrl.isBlank()) {
             return Optional.empty();
@@ -79,7 +85,36 @@ public class ActuatorClient {
             }
             return Optional.of(response.getValue());
         } catch (Exception e) {
-            log.warn("Failed to fetch metric {} [tag={}] from {}: {}", metricName, tag, actuatorUrl, e.getMessage());
+            log.debug("Metric {} [tag={}] not available from {}: {}", metricName, tag, actuatorUrl, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Fetches a Timer metric and returns the value of a specific {@code statistic}
+     * (COUNT, TOTAL_TIME, MAX). The statistic is a field inside the {@code measurements}
+     * array of the Actuator response — it is NOT a URL tag filter.
+     *
+     * <p>Returns {@link Optional#empty()} when the metric does not exist yet
+     * (e.g. no GC pauses have occurred) or when the requested statistic is absent.
+     */
+    public Optional<Double> fetchTimerStatistic(String actuatorUrl, String metricName, String statistic) {
+        if (actuatorUrl == null || actuatorUrl.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            ActuatorMetricsResponse response = restClient.get()
+                    .uri(actuatorUrl + "/metrics/" + metricName)
+                    .retrieve()
+                    .body(ActuatorMetricsResponse.class);
+            if (response == null) {
+                return Optional.empty();
+            }
+            return response.getStatisticValue(statistic);
+        } catch (Exception e) {
+            // 404 is normal when no GC pauses have occurred yet — log at DEBUG, not WARN
+            log.debug("Timer metric {} [statistic={}] not available from {}: {}",
+                    metricName, statistic, actuatorUrl, e.getMessage());
             return Optional.empty();
         }
     }

@@ -52,6 +52,9 @@ monitoring:
     evaluation-window-minutes: 60
     notification-from: ${ALERT_FROM_EMAIL:monitoring@example.com}
     notification-to: ${ALERT_TO_EMAIL:admin@example.com}
+  prediction:
+    enabled: true
+    min-r-squared: 0.3
 
 management:
   endpoints:

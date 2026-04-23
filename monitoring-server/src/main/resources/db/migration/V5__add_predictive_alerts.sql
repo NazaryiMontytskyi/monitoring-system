@@ -1,0 +1,9 @@
+ALTER TABLE alert_rules
+    ADD COLUMN IF NOT EXISTS predictive_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS lookahead_minutes  INT     NOT NULL DEFAULT 10,
+    ADD COLUMN IF NOT EXISTS min_data_points    INT     NOT NULL DEFAULT 5;
+
+ALTER TABLE alert_events
+    ADD COLUMN IF NOT EXISTS predictive          BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS predicted_breach_at TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS confidence_score    DOUBLE PRECISION;

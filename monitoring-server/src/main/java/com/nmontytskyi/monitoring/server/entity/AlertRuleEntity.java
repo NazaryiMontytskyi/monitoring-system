@@ -77,6 +77,18 @@ public class AlertRuleEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "predictive_enabled", nullable = false)
+    @Builder.Default
+    private boolean predictiveEnabled = false;
+
+    @Column(name = "lookahead_minutes", nullable = false)
+    @Builder.Default
+    private int lookaheadMinutes = 10;
+
+    @Column(name = "min_data_points", nullable = false)
+    @Builder.Default
+    private int minDataPoints = 5;
+
     /**
      * Metric types that can be monitored by an alert rule.
      */

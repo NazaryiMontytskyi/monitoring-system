@@ -47,6 +47,11 @@ public class MonitoredMicroserviceEnvironmentPostProcessor implements Environmen
         props.put("monitoring.sla-uptime-percent", sla.uptimePercent());
         props.put("monitoring.sla-error-rate-percent", sla.maxErrorRatePercent());
 
+        // Expose the actuator endpoints that the monitoring server polls.
+        // These are the lowest-priority defaults — any application.yml key wins.
+        props.put("management.endpoints.web.exposure.include", "health,info,metrics");
+        props.put("management.endpoint.health.show-details", "always");
+
         // addLast → lowest priority: application.yml and system properties always win
         environment.getPropertySources().addLast(
                 new MapPropertySource(PROPERTY_SOURCE_NAME, props));
