@@ -34,6 +34,9 @@ public class AlertRuleService {
                 .threshold(request.getThreshold())
                 .enabled(request.isEnabled())
                 .cooldownMinutes(request.getCooldownMinutes() > 0 ? request.getCooldownMinutes() : 15)
+                .predictiveEnabled(request.isPredictiveEnabled())
+                .lookaheadMinutes(request.getLookaheadMinutes() > 0 ? request.getLookaheadMinutes() : 10)
+                .minDataPoints(request.getMinDataPoints() > 0 ? request.getMinDataPoints() : 5)
                 .build();
 
         AlertRuleEntity saved = alertRuleRepository.save(entity);
@@ -67,6 +70,9 @@ public class AlertRuleService {
                 .enabled(e.isEnabled())
                 .cooldownMinutes(e.getCooldownMinutes())
                 .createdAt(e.getCreatedAt())
+                .predictiveEnabled(e.isPredictiveEnabled())
+                .lookaheadMinutes(e.getLookaheadMinutes())
+                .minDataPoints(e.getMinDataPoints())
                 .build();
     }
 }

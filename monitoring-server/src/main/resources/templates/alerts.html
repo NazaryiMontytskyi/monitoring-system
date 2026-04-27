@@ -81,7 +81,8 @@
             <!-- Add rule form (hidden by default) -->
             <div id="addRuleForm" class="hidden rounded-xl shadow-lg p-6" style="background-color:#1e293b;">
                 <h3 class="text-sm font-semibold mb-4" style="color:#f1f5f9;">New Alert Rule</h3>
-                <form th:action="@{/alerts/rules}" method="post" class="grid grid-cols-2 gap-4">
+                <form th:action="@{/alerts/rules}" method="post" class="grid grid-cols-2 gap-4"
+                      x-data="{ predictiveEnabled: false }">
                     <div>
                         <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Service</label>
                         <select name="serviceId" required
@@ -132,6 +133,31 @@
                                class="w-4 h-4 rounded">
                         <label for="enabledCheck" class="text-sm" style="color:#f1f5f9;">Enabled</label>
                     </div>
+
+                    <!-- Predictive alert toggle -->
+                    <div class="col-span-2 flex items-center gap-3 mt-1">
+                        <input type="checkbox" name="predictiveEnabled" id="predictiveEnabled"
+                               x-model="predictiveEnabled"
+                               class="w-4 h-4 rounded">
+                        <label for="predictiveEnabled" class="text-sm" style="color:#94a3b8;">
+                            Enable predictive alert
+                        </label>
+                    </div>
+                    <div x-show="predictiveEnabled" class="col-span-2 grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs" style="color:#94a3b8;">Lookahead (minutes)</label>
+                            <input type="number" name="lookaheadMinutes" value="10" min="1" max="60"
+                                   class="w-full rounded-lg px-3 py-2 text-sm mt-1"
+                                   style="background-color:#0f172a;color:#f1f5f9;border:1px solid #334155;">
+                        </div>
+                        <div>
+                            <label class="text-xs" style="color:#94a3b8;">Min data points</label>
+                            <input type="number" name="minDataPoints" value="5" min="3" max="20"
+                                   class="w-full rounded-lg px-3 py-2 text-sm mt-1"
+                                   style="background-color:#0f172a;color:#f1f5f9;border:1px solid #334155;">
+                        </div>
+                    </div>
+
                     <div class="col-span-2 flex gap-3 justify-end pt-2">
                         <button type="button"
                                 onclick="document.getElementById('addRuleForm').classList.add('hidden')"
@@ -158,12 +184,22 @@
                     <li th:each="event : ${events}" class="px-5 py-3">
                         <div class="flex items-start gap-2">
                             <span class="w-2 h-2 rounded-full mt-1 flex-shrink-0"
-                                  style="background-color:#ef4444;"></span>
+                                  th:style="${event.predictive} ? 'background-color:#7c3aed;' : 'background-color:#ef4444;'"></span>
                             <div class="min-w-0">
-                                <p class="text-xs font-medium truncate" style="color:#f1f5f9;"
-                                   th:text="${event.message}">message</p>
+                                <p class="text-xs font-medium" style="color:#f1f5f9;">
+                                    <span th:text="${event.message}">message</span>
+                                    <span th:if="${event.predictive}"
+                                          class="px-2 py-0.5 rounded text-xs ml-1"
+                                          style="background-color:#7c3aed;color:#fff;">PREDICTIVE</span>
+                                </p>
                                 <p class="text-xs mt-0.5" style="color:#94a3b8;"
                                    th:text="${#temporals.format(event.firedAt,'HH:mm:ss dd/MM/yyyy')}">time</p>
+                                <p th:if="${event.predictive and event.predictedBreachAt != null}"
+                                   class="text-xs mt-0.5" style="color:#a78bfa;">
+                                    Breach expected: <span th:text="${#temporals.format(event.predictedBreachAt,'HH:mm dd/MM/yyyy')}">—</span>
+                                    <span th:if="${event.confidenceScore != null}"
+                                          th:text="' · ' + ${#numbers.formatDecimal(event.confidenceScore * 100, 1, 0)} + '% confidence'">—</span>
+                                </p>
                                 <p th:if="${event.notificationSent}"
                                    class="text-xs mt-0.5" style="color:#3b82f6;">📧 Notification sent</p>
                             </div>

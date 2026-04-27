@@ -32,6 +32,9 @@ public class AlertEventService {
                 .metricValue(e.getMetricValue())
                 .message(e.getMessage())
                 .notificationSent(e.isNotificationSent())
+                .predictive(e.isPredictive())
+                .predictedBreachAt(e.getPredictedBreachAt())
+                .confidenceScore(e.getConfidenceScore())
                 .build();
     }
 }

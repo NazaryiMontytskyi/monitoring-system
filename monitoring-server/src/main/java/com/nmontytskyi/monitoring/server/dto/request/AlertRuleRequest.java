@@ -28,4 +28,10 @@ public class AlertRuleRequest {
     private boolean enabled;
 
     private int cooldownMinutes;
+
+    private boolean predictiveEnabled;
+
+    private int lookaheadMinutes = 10;
+
+    private int minDataPoints = 5;
 }

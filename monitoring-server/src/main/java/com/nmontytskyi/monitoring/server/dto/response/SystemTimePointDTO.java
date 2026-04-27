@@ -21,4 +21,5 @@ public class SystemTimePointDTO {
     private long servicesUp;
     private long servicesDown;
     private long servicesDegraded;
+    private long anomalyCount;
 }

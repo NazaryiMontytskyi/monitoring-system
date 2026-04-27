@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Reports — ' + ${service.name}, ~{::main})}">
+<head></head>
+<body>
+<main class="p-6 flex flex-col gap-6">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+        <a th:href="@{/}" class="text-sm transition-colors hover:brightness-110" style="color:#94a3b8;">← Dashboard</a>
+        <span style="color:#475569;">/</span>
+        <a th:href="@{/services/{id}(id=${service.id})}"
+           class="text-sm transition-colors hover:brightness-110" style="color:#94a3b8;"
+           th:text="${service.name}">service</a>
+        <span style="color:#475569;">/</span>
+        <h1 class="text-2xl font-semibold" style="color:#f1f5f9;">Reports</h1>
+    </div>
+
+    <!-- Generate report form -->
+    <div class="rounded-xl shadow-lg p-6" style="background-color:#1e293b;"
+         x-data="{
+             reportType: 'sla',
+             from: '[[${thirtyDaysAgo}]]',
+             to: '[[${today}]]',
+             get downloadUrl() {
+                 return '/api/reports/' + [[${service.id}]] + '/' + this.reportType
+                     + '?from=' + this.from + '&to=' + this.to;
+             }
+         }">
+
+        <h2 class="text-base font-semibold mb-4" style="color:#f1f5f9;">Generate Report</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Report Type</label>
+                <select x-model="reportType"
+                        class="w-full px-3 py-2 rounded-lg text-sm border"
+                        style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                    <option value="sla">SLA Summary</option>
+                    <option value="full">Full Report</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">From</label>
+                <input type="date" x-model="from"
+                       class="w-full px-3 py-2 rounded-lg text-sm border"
+                       style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+            </div>
+            <div>
+                <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">To</label>
+                <input type="date" x-model="to"
+                       class="w-full px-3 py-2 rounded-lg text-sm border"
+                       style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+            </div>
+            <div>
+                <a :href="downloadUrl"
+                   class="block w-full text-center px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:brightness-110"
+                   style="background-color:#3b82f6;color:#fff;">
+                    ⬇ Download PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report history -->
+    <div class="rounded-xl shadow-lg overflow-hidden" style="background-color:#1e293b;">
+        <div class="px-6 py-4 border-b" style="border-color:#334155;">
+            <h2 class="text-base font-semibold" style="color:#f1f5f9;">Report History</h2>
+        </div>
+
+        <div th:if="${#lists.isEmpty(reportHistory)}" class="p-6 text-sm text-center" style="color:#94a3b8;">
+            No reports generated yet.
+        </div>
+
+        <table th:if="${!#lists.isEmpty(reportHistory)}" class="w-full text-sm">
+            <thead>
+                <tr style="background-color:#0f172a;">
+                    <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Type</th>
+                    <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Period</th>
+                    <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Generated</th>
+                    <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Size</th>
+                    <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Download</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="report, iter : ${reportHistory}"
+                    th:style="${iter.odd} ? 'background-color:#1e293b;' : 'background-color:#162032;'">
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded text-xs font-medium"
+                              style="background-color:rgba(59,130,246,0.15);color:#3b82f6;"
+                              th:text="${report.reportType}">TYPE</span>
+                    </td>
+                    <td class="px-4 py-3 text-xs" style="color:#f1f5f9;">
+                        <span th:text="${#temporals.format(report.periodFrom,'yyyy-MM-dd')}">from</span>
+                        –
+                        <span th:text="${#temporals.format(report.periodTo,'yyyy-MM-dd')}">to</span>
+                    </td>
+                    <td class="px-4 py-3 text-xs" style="color:#94a3b8;"
+                        th:text="${#temporals.format(report.generatedAt,'yyyy-MM-dd HH:mm')}">—</td>
+                    <td class="px-4 py-3 text-xs" style="color:#94a3b8;"
+                        th:text="${report.fileSizeKb != null ? report.fileSizeKb + ' KB' : '—'}">—</td>
+                    <td class="px-4 py-3">
+                        <a th:href="@{/api/reports/{id}/sla(id=${service.id},from=${#temporals.format(report.periodFrom,'yyyy-MM-dd')},to=${#temporals.format(report.periodTo,'yyyy-MM-dd')})}"
+                           th:if="${report.reportType.name() == 'SLA_SUMMARY'}"
+                           class="text-xs px-2 py-1 rounded"
+                           style="background-color:rgba(34,197,94,0.15);color:#22c55e;">⬇ PDF</a>
+                        <a th:href="@{/api/reports/{id}/full(id=${service.id},from=${#temporals.format(report.periodFrom,'yyyy-MM-dd')},to=${#temporals.format(report.periodTo,'yyyy-MM-dd')})}"
+                           th:if="${report.reportType.name() == 'FULL'}"
+                           class="text-xs px-2 py-1 rounded"
+                           style="background-color:rgba(34,197,94,0.15);color:#22c55e;">⬇ PDF</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</main>
+</body>
+</html>

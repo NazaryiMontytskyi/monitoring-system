@@ -187,4 +187,7 @@ public interface MetricRecordRepository extends JpaRepository<MetricRecordEntity
     long countErrors(
             @Param("serviceId") Long serviceId,
             @Param("since") LocalDateTime since);
+
+    List<MetricRecordEntity> findTop40ByServiceIdAndSourceOrderByRecordedAtDesc(
+            Long serviceId, MetricRecordEntity.MetricSource source);
 }

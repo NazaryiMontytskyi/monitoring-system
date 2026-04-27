@@ -62,6 +62,8 @@ public class MetricsTimeSeriesController {
                 .threadsDaemon(e.getThreadsDaemon())
                 .gcPauseMs(e.getGcPauseMs())
                 .processCpuUsage(e.getProcessCpuUsage())
+                .anomaly(e.isAnomaly())
+                .zScore(e.getZScore())
                 .build();
     }
 
@@ -75,6 +77,7 @@ public class MetricsTimeSeriesController {
                 .servicesUp(toLong(row[5]))
                 .servicesDown(toLong(row[6]))
                 .servicesDegraded(toLong(row[7]))
+                .anomalyCount(toLong(row[8]))
                 .build();
     }
 

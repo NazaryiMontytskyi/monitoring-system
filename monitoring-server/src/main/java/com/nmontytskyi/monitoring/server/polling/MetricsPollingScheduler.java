@@ -50,7 +50,9 @@ public class MetricsPollingScheduler {
         Optional<Double> nonHeapUsed = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.memory.used", "area:nonheap");
         Optional<Double> threadsLive = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.threads.live");
         Optional<Double> threadsDaemon = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.threads.daemon");
-        Optional<Double> gcPause = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "jvm.gc.pause", "statistic:TOTAL_TIME");
+        // "statistic" (TOTAL_TIME / COUNT / MAX) is a field in the measurements array,
+        // not a Micrometer tag — must NOT be passed as a ?tag= URL filter.
+        Optional<Double> gcPause = actuatorClient.fetchTimerStatistic(service.getActuatorUrl(), "jvm.gc.pause", "TOTAL_TIME");
         Optional<Double> processCpu = actuatorClient.fetchMetricValue(service.getActuatorUrl(), "process.cpu.usage");
 
         MetricSnapshotRequest request = MetricSnapshotRequest.builder()

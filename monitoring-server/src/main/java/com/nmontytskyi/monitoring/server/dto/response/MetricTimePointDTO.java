@@ -25,4 +25,6 @@ public class MetricTimePointDTO {
     private Integer threadsDaemon;
     private Double gcPauseMs;
     private Double processCpuUsage;
+    private boolean anomaly;
+    private double zScore;
 }

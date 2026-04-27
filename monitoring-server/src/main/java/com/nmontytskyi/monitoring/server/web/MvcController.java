@@ -11,6 +11,9 @@ import com.nmontytskyi.monitoring.server.dto.response.MetricRecordResponse;
 import com.nmontytskyi.monitoring.server.dto.response.ServiceResponse;
 import com.nmontytskyi.monitoring.server.entity.AlertRuleEntity;
 import com.nmontytskyi.monitoring.server.exception.ServiceNotFoundException;
+import com.nmontytskyi.monitoring.server.repository.ReportHistoryRepository;
+import com.nmontytskyi.monitoring.server.dto.response.ReportHistoryResponse;
+import com.nmontytskyi.monitoring.server.entity.ReportHistoryEntity;
 import com.nmontytskyi.monitoring.server.service.AlertEventService;
 import com.nmontytskyi.monitoring.server.service.AlertRuleService;
 import com.nmontytskyi.monitoring.server.service.MetricsPersistenceService;
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -46,6 +50,7 @@ public class MvcController {
     private final SlaCalculationService slaService;
     private final AlertRuleService alertRuleService;
     private final AlertEventService alertEventService;
+    private final ReportHistoryRepository reportHistoryRepository;
 
     @GetMapping("/")
     public String dashboard(Model model) {
@@ -128,6 +133,30 @@ public class MvcController {
         return "sla-report";
     }
 
+    @GetMapping("/services/{id}/reports")
+    public String reports(@PathVariable Long id, Model model) {
+        ServiceResponse service = serviceService.findById(id);
+        List<ReportHistoryResponse> history = reportHistoryRepository
+                .findAllByServiceIdOrderByGeneratedAtDesc(id)
+                .stream()
+                .map(e -> ReportHistoryResponse.builder()
+                        .id(e.getId())
+                        .reportType(e.getReportType())
+                        .periodFrom(e.getPeriodFrom())
+                        .periodTo(e.getPeriodTo())
+                        .generatedAt(e.getGeneratedAt())
+                        .fileSizeKb(e.getFileSizeKb())
+                        .build())
+                .toList();
+
+        model.addAttribute("service", service);
+        model.addAttribute("reportHistory", history);
+        model.addAttribute("today", LocalDate.now().toString());
+        model.addAttribute("thirtyDaysAgo", LocalDate.now().minusDays(30).toString());
+        model.addAttribute("currentPath", "/services/" + id + "/reports");
+        return "reports";
+    }
+
     @GetMapping("/alerts")
     public String alerts(Model model) {
         List<ServiceResponse> allServices = serviceService.findAll();
@@ -158,6 +187,9 @@ public class MvcController {
             @RequestParam Double threshold,
             @RequestParam(defaultValue = "15") int cooldownMinutes,
             @RequestParam(required = false, defaultValue = "false") boolean enabled,
+            @RequestParam(required = false, defaultValue = "false") boolean predictiveEnabled,
+            @RequestParam(defaultValue = "10") int lookaheadMinutes,
+            @RequestParam(defaultValue = "5") int minDataPoints,
             RedirectAttributes redirectAttrs) {
         AlertRuleRequest request = AlertRuleRequest.builder()
                 .serviceId(serviceId)
@@ -166,6 +198,9 @@ public class MvcController {
                 .threshold(threshold)
                 .enabled(enabled)
                 .cooldownMinutes(cooldownMinutes)
+                .predictiveEnabled(predictiveEnabled)
+                .lookaheadMinutes(lookaheadMinutes)
+                .minDataPoints(minDataPoints)
                 .build();
         alertRuleService.create(request);
         redirectAttrs.addFlashAttribute("successMessage", "Rule created successfully");
