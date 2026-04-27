@@ -15,19 +15,19 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="rounded-xl p-5 border-l-4 shadow-lg" style="background-color:#1e293b;border-left-color:#3b82f6;">
             <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Total Services</p>
-            <p class="text-3xl font-bold mt-1" style="color:#f1f5f9;" th:text="${summary.totalServices}">0</p>
+            <p id="stat-total" class="text-3xl font-bold mt-1" style="color:#f1f5f9;" th:text="${summary.totalServices}">0</p>
         </div>
         <div class="rounded-xl p-5 border-l-4 shadow-lg" style="background-color:#1e293b;border-left-color:#22c55e;">
             <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Up</p>
-            <p class="text-3xl font-bold mt-1" style="color:#22c55e;" th:text="${summary.healthyCount}">0</p>
+            <p id="stat-up" class="text-3xl font-bold mt-1" style="color:#22c55e;" th:text="${summary.healthyCount}">0</p>
         </div>
         <div class="rounded-xl p-5 border-l-4 shadow-lg" style="background-color:#1e293b;border-left-color:#f59e0b;">
             <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Degraded</p>
-            <p class="text-3xl font-bold mt-1" style="color:#f59e0b;" th:text="${summary.degradedCount}">0</p>
+            <p id="stat-degraded" class="text-3xl font-bold mt-1" style="color:#f59e0b;" th:text="${summary.degradedCount}">0</p>
         </div>
         <div class="rounded-xl p-5 border-l-4 shadow-lg" style="background-color:#1e293b;border-left-color:#ef4444;">
             <p class="text-xs font-medium uppercase tracking-wide" style="color:#94a3b8;">Down</p>
-            <p class="text-3xl font-bold mt-1" style="color:#ef4444;" th:text="${summary.downCount}">0</p>
+            <p id="stat-down" class="text-3xl font-bold mt-1" style="color:#ef4444;" th:text="${summary.downCount}">0</p>
         </div>
     </div>
 
@@ -73,10 +73,14 @@
             <div class="px-6 py-4 border-b" style="border-color:#334155;">
                 <h2 class="text-base font-semibold" style="color:#f1f5f9;">Service Status</h2>
             </div>
-            <div th:if="${#lists.isEmpty(summary.services)}" class="p-6 text-sm text-center" style="color:#94a3b8;">
+            <div id="no-services-msg"
+                 class="p-6 text-sm text-center"
+                 style="color:#94a3b8;"
+                 th:classappend="${!#lists.isEmpty(summary.services)} ? 'hidden' : ''">
                 No services registered yet.
             </div>
-            <table th:if="${!#lists.isEmpty(summary.services)}" class="w-full text-sm">
+            <table id="service-table" class="w-full text-sm"
+                   th:classappend="${#lists.isEmpty(summary.services)} ? 'hidden' : ''">
                 <thead>
                     <tr style="background-color:#0f172a;">
                         <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Name</th>
@@ -85,7 +89,7 @@
                         <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="service-table-body">
                     <tr th:each="svc, iter : ${summary.services}"
                         th:style="${iter.odd} ? 'background-color:#1e293b;' : 'background-color:#162032;'"
                         class="transition-colors hover:brightness-110">
@@ -125,10 +129,16 @@
         <div class="px-6 py-4 border-b" style="border-color:#334155;">
             <h2 class="text-base font-semibold" style="color:#f1f5f9;">Recent Alerts</h2>
         </div>
-        <div th:if="${#lists.isEmpty(recentEvents)}" class="p-6 text-sm text-center" style="color:#94a3b8;">
+        <div id="no-alerts-msg"
+             class="p-6 text-sm text-center"
+             style="color:#94a3b8;"
+             th:classappend="${!#lists.isEmpty(recentEvents)} ? 'hidden' : ''">
             No recent alerts.
         </div>
-        <ul th:if="${!#lists.isEmpty(recentEvents)}" class="divide-y" style="border-color:#334155;">
+        <ul id="recent-alerts-list"
+            class="divide-y"
+            style="border-color:#334155;"
+            th:classappend="${#lists.isEmpty(recentEvents)} ? 'hidden' : ''">
             <li th:each="event : ${recentEvents}" class="px-6 py-3 flex items-start gap-3">
                 <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background-color:#ef4444;"></span>
                 <div>
