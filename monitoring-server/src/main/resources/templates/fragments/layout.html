@@ -85,5 +85,150 @@
 
     <script th:src="@{/js/charts.js}"></script>
     <script th:src="@{/js/dashboard.js}"></script>
+
+    <!-- Chart Detail Modal -->
+    <div id="chart-modal">
+        <div id="chart-modal-inner">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0;">
+                <span id="chart-modal-title" style="font-size:16px;font-weight:600;color:#f1f5f9;"></span>
+                <button id="chart-modal-close"
+                        style="background:none;border:none;color:#94a3b8;font-size:26px;line-height:1;cursor:pointer;padding:2px 8px;"
+                        title="Close">&times;</button>
+            </div>
+            <div style="flex:1;min-height:0;position:relative;">
+                <canvas id="chart-modal-canvas"></canvas>
+            </div>
+            <div id="chart-modal-pan-controls"
+                 style="display:none;justify-content:center;gap:12px;margin-top:12px;flex-shrink:0;">
+                <button id="chart-pan-left"
+                        style="padding:6px 18px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#94a3b8;cursor:pointer;font-size:13px;">&#8592; Pan</button>
+                <button id="chart-pan-right"
+                        style="padding:6px 18px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#94a3b8;cursor:pointer;font-size:13px;">Pan &#8594;</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        var _modalChart      = null;
+        var _modalAllLabels  = [];
+        var _modalPanOffset  = 0;
+        var _PAN_WINDOW      = 20;
+        var _PAN_STEP        = 10;
+
+        function openChartModal(sourceChart, title) {
+            document.getElementById('chart-modal-title').textContent = title || '';
+
+            var modal = document.getElementById('chart-modal');
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+
+            var modalCanvas = document.getElementById('chart-modal-canvas');
+            if (_modalChart) { _modalChart.destroy(); _modalChart = null; }
+
+            var dataCopy   = JSON.parse(JSON.stringify(sourceChart.config.data));
+            _modalAllLabels = dataCopy.labels || [];
+
+            var sourceType = sourceChart.config.type;
+            var isLine     = sourceType === 'line';
+
+            if (isLine) {
+                dataCopy.datasets.forEach(function (ds, idx) {
+                    var orig = sourceChart.config.data.datasets[idx];
+                    if (Array.isArray(orig.pointRadius)) {
+                        ds.pointRadius      = orig.pointRadius.map(function (r) { return r >= 5 ? 8 : 3; });
+                        ds.pointHoverRadius = orig.pointRadius.map(function (r) { return r >= 5 ? 10 : 5; });
+                        if (orig.pointBackgroundColor) ds.pointBackgroundColor = orig.pointBackgroundColor.slice();
+                        if (orig.pointBorderColor)     ds.pointBorderColor     = orig.pointBorderColor.slice();
+                    } else {
+                        ds.pointRadius      = 3;
+                        ds.pointHoverRadius = 5;
+                    }
+                });
+            }
+
+            var gridColor = 'rgba(255,255,255,0.05)';
+            var opts = {
+                responsive:          true,
+                maintainAspectRatio: false,
+                animation:           false,
+                plugins: {
+                    legend:  { display: true, labels: { color: '#94a3b8', boxWidth: 12, font: { size: 13 } } },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8', font: { size: 11 }, maxTicksLimit: 20 }, grid: { color: gridColor } },
+                    y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: gridColor }, beginAtZero: true }
+                }
+            };
+
+            var srcScales = sourceChart.options.scales;
+            if (srcScales) {
+                if (srcScales.x && srcScales.x.stacked) { opts.scales.x.stacked = true; opts.scales.y.stacked = true; }
+                if (srcScales.y && srcScales.y.ticks && srcScales.y.ticks.stepSize) {
+                    opts.scales.y.ticks.stepSize = srcScales.y.ticks.stepSize;
+                }
+            }
+
+            var srcTooltip = sourceChart.options.plugins && sourceChart.options.plugins.tooltip;
+            if (srcTooltip && srcTooltip.callbacks) {
+                opts.plugins.tooltip.callbacks = srcTooltip.callbacks;
+            }
+
+            var panControls = document.getElementById('chart-modal-pan-controls');
+            if (isLine && _modalAllLabels.length > _PAN_WINDOW) {
+                _modalPanOffset = Math.max(0, _modalAllLabels.length - _PAN_WINDOW);
+                opts.scales.x.min = _modalAllLabels[_modalPanOffset];
+                opts.scales.x.max = _modalAllLabels[_modalPanOffset + _PAN_WINDOW - 1];
+                if (panControls) panControls.style.display = 'flex';
+            } else {
+                _modalPanOffset = 0;
+                if (panControls) panControls.style.display = 'none';
+            }
+
+            _modalChart = new Chart(modalCanvas, { type: sourceType, data: dataCopy, options: opts });
+        }
+
+        function closeChartModal() {
+            var modal = document.getElementById('chart-modal');
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function panModal(delta) {
+            if (!_modalChart) return;
+            var max = Math.max(0, _modalAllLabels.length - _PAN_WINDOW);
+            _modalPanOffset = Math.max(0, Math.min(_modalPanOffset + delta, max));
+            var endIdx = Math.min(_modalPanOffset + _PAN_WINDOW - 1, _modalAllLabels.length - 1);
+            _modalChart.options.scales.x.min = _modalAllLabels[_modalPanOffset];
+            _modalChart.options.scales.x.max = _modalAllLabels[endIdx];
+            _modalChart.update();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var modal = document.getElementById('chart-modal');
+            if (!modal) return;
+
+            document.getElementById('chart-modal-close').addEventListener('click', closeChartModal);
+
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeChartModal();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeChartModal();
+            });
+
+            var panLeft  = document.getElementById('chart-pan-left');
+            var panRight = document.getElementById('chart-pan-right');
+            if (panLeft)  panLeft.addEventListener('click',  function () { panModal(-_PAN_STEP); });
+            if (panRight) panRight.addEventListener('click', function () { panModal(_PAN_STEP); });
+        });
+
+        window.openChartModal = openChartModal;
+    }());
+    </script>
 </body>
 </html>

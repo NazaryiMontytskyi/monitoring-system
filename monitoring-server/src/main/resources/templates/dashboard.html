@@ -46,19 +46,19 @@
             </span>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+            <div class="rounded-xl p-4 chart-card" style="background-color:#1f2937;" title="Натисніть для детального перегляду">
                 <p class="text-sm mb-2" style="color:#94a3b8;">Avg Response Time (ms)</p>
                 <div style="height:180px;"><canvas id="sys-chart-avg-rt"></canvas></div>
             </div>
-            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+            <div class="rounded-xl p-4 chart-card" style="background-color:#1f2937;" title="Натисніть для детального перегляду">
                 <p class="text-sm mb-2" style="color:#94a3b8;">Services Status</p>
                 <div style="height:180px;"><canvas id="sys-chart-status"></canvas></div>
             </div>
-            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+            <div class="rounded-xl p-4 chart-card" style="background-color:#1f2937;" title="Натисніть для детального перегляду">
                 <p class="text-sm mb-2" style="color:#94a3b8;">Avg CPU Usage (%)</p>
                 <div style="height:180px;"><canvas id="sys-chart-avg-cpu"></canvas></div>
             </div>
-            <div class="rounded-xl p-4" style="background-color:#1f2937;">
+            <div class="rounded-xl p-4 chart-card" style="background-color:#1f2937;" title="Натисніть для детального перегляду">
                 <p class="text-sm mb-2" style="color:#ef4444;">Anomalies / min</p>
                 <div style="height:180px;"><canvas id="sys-chart-anomalies"></canvas></div>
             </div>
@@ -109,7 +109,7 @@
         </div>
 
         <!-- Response time bar chart -->
-        <div class="rounded-xl shadow-lg p-6" style="background-color:#1e293b;">
+        <div class="rounded-xl shadow-lg p-6 chart-card" style="background-color:#1e293b;" title="Натисніть для детального перегляду">
             <h2 class="text-base font-semibold mb-4" style="color:#f1f5f9;">Response Time Overview</h2>
             <div th:if="${#lists.isEmpty(summary.services)}" class="flex items-center justify-center h-40 text-sm" style="color:#94a3b8;">
                 No data available

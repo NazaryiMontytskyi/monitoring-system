@@ -231,6 +231,24 @@
             .catch(function () {});
     }
 
+    function attachClickHandlers() {
+        var ids = [
+            'chart-response-time', 'chart-cpu', 'chart-heap',
+            'chart-non-heap', 'chart-threads', 'chart-gc'
+        ];
+        ids.forEach(function (id) {
+            var canvas = document.getElementById(id);
+            if (!canvas) return;
+            canvas.addEventListener('click', function () {
+                var chart = Chart.getChart(canvas);
+                if (!chart || typeof openChartModal !== 'function') return;
+                var card = canvas.closest('.chart-card');
+                var titleEl = card ? card.querySelector('p') : null;
+                openChartModal(chart, titleEl ? titleEl.textContent.trim() : id);
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         var section = document.getElementById('live-metrics-section');
         if (!section) return;
@@ -239,6 +257,7 @@
         if (!serviceId) return;
 
         initCharts();
+        attachClickHandlers();
         fetchAndRender(serviceId);
         setInterval(function () { fetchAndRender(serviceId); }, POLL_INTERVAL);
     });
