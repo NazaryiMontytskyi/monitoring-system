@@ -134,6 +134,7 @@ public class PdfReportService {
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
+            log.error("SLA PDF generation failed for service {}", service.getName(), e);
             throw new ReportGenerationException("PDF generation failed: " + e.getMessage());
         }
     }
@@ -166,6 +167,7 @@ public class PdfReportService {
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
+            log.error("Full PDF generation failed for service {}", service.getName(), e);
             throw new ReportGenerationException("PDF generation failed: " + e.getMessage());
         }
     }
@@ -298,7 +300,7 @@ public class PdfReportService {
         doc.add(Chunk.NEWLINE);
 
         var events = alertEventRepository
-                .findAllByFiredAtBetweenOrderByFiredAtDesc(from, to, PageRequest.of(0, 5));
+                .findAllByServiceIdAndFiredAtBetweenOrderByFiredAtDesc(serviceId, from, to, PageRequest.of(0, 5));
 
         if (events.isEmpty()) {
             doc.add(new Paragraph("No alerts in this period.", FONT_CELL));
