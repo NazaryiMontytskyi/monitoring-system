@@ -2,6 +2,7 @@ package com.nmontytskyi.monitoring.server.web;
 
 import com.nmontytskyi.monitoring.model.HealthStatus;
 import com.nmontytskyi.monitoring.model.SlaReport;
+import com.nmontytskyi.monitoring.server.dto.ServiceWithSlaDto;
 import com.nmontytskyi.monitoring.server.dto.request.AlertRuleRequest;
 import com.nmontytskyi.monitoring.server.dto.response.AggregateMetricsResponse;
 import com.nmontytskyi.monitoring.server.dto.response.AlertEventResponse;
@@ -10,12 +11,15 @@ import com.nmontytskyi.monitoring.server.dto.response.DashboardSummaryResponse;
 import com.nmontytskyi.monitoring.server.dto.response.MetricRecordResponse;
 import com.nmontytskyi.monitoring.server.dto.response.ServiceResponse;
 import com.nmontytskyi.monitoring.server.entity.AlertRuleEntity;
+import com.nmontytskyi.monitoring.server.entity.SlaDefinitionEntity;
 import com.nmontytskyi.monitoring.server.exception.ServiceNotFoundException;
 import com.nmontytskyi.monitoring.server.repository.ReportHistoryRepository;
 import com.nmontytskyi.monitoring.server.dto.response.ReportHistoryResponse;
 import com.nmontytskyi.monitoring.server.entity.ReportHistoryEntity;
+import com.nmontytskyi.monitoring.server.repository.SlaDefinitionRepository;
 import com.nmontytskyi.monitoring.server.service.AlertEventService;
 import com.nmontytskyi.monitoring.server.service.AlertRuleService;
+import com.nmontytskyi.monitoring.server.service.AppSettingsService;
 import com.nmontytskyi.monitoring.server.service.MetricsPersistenceService;
 import com.nmontytskyi.monitoring.server.service.RegisteredServiceService;
 import com.nmontytskyi.monitoring.server.sla.SlaCalculationService;
@@ -51,6 +55,8 @@ public class MvcController {
     private final AlertRuleService alertRuleService;
     private final AlertEventService alertEventService;
     private final ReportHistoryRepository reportHistoryRepository;
+    private final AppSettingsService appSettingsService;
+    private final SlaDefinitionRepository slaDefinitionRepository;
 
     @GetMapping("/")
     public String dashboard(Model model) {
@@ -212,6 +218,50 @@ public class MvcController {
         alertRuleService.deleteById(id);
         redirectAttrs.addFlashAttribute("successMessage", "Rule deleted successfully");
         return "redirect:/alerts";
+    }
+
+    @GetMapping("/settings")
+    public String settings(Model model) {
+        List<ServiceResponse> services = serviceService.findAll();
+        List<ServiceWithSlaDto> servicesWithSla = services.stream()
+                .map(svc -> {
+                    SlaDefinitionEntity sla = slaDefinitionRepository.findById(svc.getId()).orElse(null);
+                    return ServiceWithSlaDto.builder()
+                            .id(svc.getId())
+                            .name(svc.getName())
+                            .status(svc.getStatus())
+                            .uptimePercent(sla != null ? sla.getUptimePercent() : 99.9)
+                            .maxResponseTimeMs(sla != null ? sla.getMaxResponseTimeMs() : 1000L)
+                            .maxErrorRatePercent(sla != null ? sla.getMaxErrorRatePercent() : 5.0)
+                            .description(sla != null ? sla.getDescription() : null)
+                            .build();
+                })
+                .toList();
+
+        model.addAttribute("services", servicesWithSla);
+        model.addAttribute("emailTo", appSettingsService.get("notification.email.to", ""));
+        model.addAttribute("currentPath", "/settings");
+        return "settings";
+    }
+
+    @PostMapping("/settings/email")
+    public String saveEmail(@RequestParam String emailTo, RedirectAttributes redirectAttrs) {
+        appSettingsService.set("notification.email.to", emailTo.trim());
+        redirectAttrs.addFlashAttribute("successMessage", "Email updated successfully");
+        return "redirect:/settings";
+    }
+
+    @PostMapping("/settings/sla/{serviceId}")
+    public String saveSla(
+            @PathVariable Long serviceId,
+            @RequestParam double uptimePercent,
+            @RequestParam long maxResponseTimeMs,
+            @RequestParam double maxErrorRatePercent,
+            @RequestParam(required = false) String description,
+            RedirectAttributes redirectAttrs) {
+        slaDefinitionRepository.upsert(serviceId, uptimePercent, maxResponseTimeMs, maxErrorRatePercent, description);
+        redirectAttrs.addFlashAttribute("successMessage", "SLA updated successfully");
+        return "redirect:/settings";
     }
 
     @ExceptionHandler(ServiceNotFoundException.class)

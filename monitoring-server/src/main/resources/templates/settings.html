@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Settings', ~{::main})}">
+<body>
+<main>
+    <div class="p-8 max-w-4xl mx-auto space-y-8">
+
+        <!-- Page header -->
+        <div>
+            <h1 class="text-2xl font-semibold" style="color:#f1f5f9;">Settings</h1>
+            <p class="text-sm mt-1" style="color:#94a3b8;">Personalise notifications and SLA thresholds</p>
+        </div>
+
+        <!-- ── Email Notifications ── -->
+        <div class="rounded-xl p-6" style="background-color:#1e293b;">
+            <h2 class="text-base font-semibold mb-1" style="color:#f1f5f9;">Email Notifications</h2>
+            <p class="text-sm mb-5" style="color:#94a3b8;">Address that receives all alert notifications</p>
+
+            <form th:action="@{/settings/email}" method="post"
+                  x-data="{ email: /*[[${emailTo}]]*/ '', dirty: false, invalid: false }"
+                  @submit.prevent="invalid = !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/); if (!invalid) $el.submit()">
+
+                <div class="flex gap-3 items-start">
+                    <div class="flex-1">
+                        <input type="email" name="emailTo"
+                               x-model="email"
+                               @input="dirty = true; invalid = false"
+                               placeholder="admin@example.com"
+                               class="w-full px-3 py-2 rounded-lg text-sm border"
+                               style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;"
+                               th:value="${emailTo}">
+                        <p x-show="invalid" x-cloak class="text-xs mt-1" style="color:#ef4444;">
+                            Please enter a valid email address.
+                        </p>
+                    </div>
+                    <button type="submit"
+                            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            style="background-color:#3b82f6;color:#fff;">
+                        Save Email
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── SLA Thresholds ── -->
+        <div class="rounded-xl p-6" style="background-color:#1e293b;">
+            <h2 class="text-base font-semibold mb-1" style="color:#f1f5f9;">SLA Thresholds per Service</h2>
+            <p class="text-sm mb-5" style="color:#94a3b8;">Configure compliance targets for each microservice</p>
+
+            <!-- Empty state -->
+            <div th:if="${#lists.isEmpty(services)}"
+                 class="text-center py-10 text-sm" style="color:#475569;">
+                No services registered yet.
+            </div>
+
+            <!-- Service cards -->
+            <div th:each="svc : ${services}"
+                 x-data="{ editing: false }"
+                 class="rounded-xl p-4 mb-3 last:mb-0"
+                 style="background-color:#1f2937;">
+
+                <!-- Card header -->
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium" style="color:#f1f5f9;" th:text="${svc.name}">service-name</span>
+
+                        <!-- Status badge -->
+                        <span th:if="${svc.status != null}"
+                              class="text-xs px-2 py-0.5 rounded-full font-medium"
+                              th:classappend="${svc.status.name() == 'UP'} ? '' :
+                                             (${svc.status.name() == 'DEGRADED'} ? '' : '')"
+                              th:style="${svc.status.name() == 'UP'}    ? 'background-color:#14532d;color:#22c55e;' :
+                                        (${svc.status.name() == 'DEGRADED'} ? 'background-color:#78350f;color:#f59e0b;' :
+                                        'background-color:#450a0a;color:#ef4444;')"
+                              th:text="${svc.status}">UP</span>
+                    </div>
+                    <button @click="editing = !editing"
+                            class="text-xs px-3 py-1 rounded-lg border transition-colors"
+                            style="border-color:#334155;color:#94a3b8;"
+                            x-text="editing ? 'Cancel' : 'Edit'">Edit</button>
+                </div>
+
+                <!-- Current values (view mode) -->
+                <div x-show="!editing" class="flex flex-wrap gap-2">
+                    <span class="text-xs px-2 py-1 rounded-md font-medium"
+                          style="background-color:#052e16;color:#22c55e;">
+                        &ge; <span th:text="${svc.uptimePercent}">99.9</span>% uptime
+                    </span>
+                    <span class="text-xs px-2 py-1 rounded-md font-medium"
+                          style="background-color:#1c1917;color:#f59e0b;">
+                        &le; <span th:text="${svc.maxResponseTimeMs}">1000</span> ms RT
+                    </span>
+                    <span class="text-xs px-2 py-1 rounded-md font-medium"
+                          style="background-color:#172554;color:#3b82f6;">
+                        &le; <span th:text="${svc.maxErrorRatePercent}">5.0</span>% errors
+                    </span>
+                </div>
+
+                <!-- Edit form -->
+                <form x-show="editing" x-cloak
+                      th:action="@{/settings/sla/{id}(id=${svc.id})}" method="post"
+                      class="space-y-3 mt-2">
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs mb-1" style="color:#94a3b8;">Uptime %</label>
+                            <input type="number" name="uptimePercent"
+                                   step="0.1" min="0" max="100"
+                                   th:value="${svc.uptimePercent}"
+                                   class="w-full px-3 py-2 rounded-lg text-sm border"
+                                   style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;"
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-xs mb-1" style="color:#94a3b8;">Max Response Time ms</label>
+                            <input type="number" name="maxResponseTimeMs"
+                                   min="1"
+                                   th:value="${svc.maxResponseTimeMs}"
+                                   class="w-full px-3 py-2 rounded-lg text-sm border"
+                                   style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;"
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-xs mb-1" style="color:#94a3b8;">Max Error Rate %</label>
+                            <input type="number" name="maxErrorRatePercent"
+                                   step="0.1" min="0" max="100"
+                                   th:value="${svc.maxErrorRatePercent}"
+                                   class="w-full px-3 py-2 rounded-lg text-sm border"
+                                   style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs mb-1" style="color:#94a3b8;">Description (optional)</label>
+                        <input type="text" name="description"
+                               th:value="${svc.description}"
+                               placeholder="Optional description"
+                               class="w-full px-3 py-2 rounded-lg text-sm border"
+                               style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="submit"
+                                class="px-4 py-2 rounded-lg text-sm font-medium"
+                                style="background-color:#3b82f6;color:#fff;">
+                            Save
+                        </button>
+                        <button type="button"
+                                @click="editing = false"
+                                class="px-4 py-2 rounded-lg text-sm font-medium border"
+                                style="border-color:#334155;color:#94a3b8;background-color:transparent;">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>

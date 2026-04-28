@@ -1,28 +1,17 @@
 package com.nmontytskyi.monitoring.server.controller;
 
 import com.nmontytskyi.monitoring.model.SlaReport;
+import com.nmontytskyi.monitoring.server.dto.request.SlaUpdateRequest;
+import com.nmontytskyi.monitoring.server.exception.ServiceNotFoundException;
+import com.nmontytskyi.monitoring.server.repository.RegisteredServiceRepository;
+import com.nmontytskyi.monitoring.server.repository.SlaDefinitionRepository;
 import com.nmontytskyi.monitoring.server.sla.SlaCalculationService;
 import com.nmontytskyi.monitoring.server.sla.SlaWindow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * REST controller exposing SLA compliance reports for registered microservices.
- *
- * <p>Endpoint: {@code GET /api/services/{id}/sla?window=DAY}
- *
- * <ul>
- *   <li>{@code 200 OK}  — SLA report for the requested window</li>
- *   <li>{@code 404 Not Found} — no service with the given {@code id}
- *       (handled by {@code GlobalExceptionHandler})</li>
- * </ul>
- */
 @RestController
 @RequestMapping("/api/services/{id}/sla")
 @Validated
@@ -30,21 +19,30 @@ import org.springframework.web.bind.annotation.RestController;
 public class SlaController {
 
     private final SlaCalculationService slaCalculationService;
+    private final SlaDefinitionRepository slaDefinitionRepository;
+    private final RegisteredServiceRepository registeredServiceRepository;
 
-    /**
-     * Returns the SLA compliance report for a service over the specified window.
-     *
-     * @param id     service identifier
-     * @param window reporting time window; defaults to {@code DAY} (last 24 hours)
-     * @return {@code 200} with the {@link SlaReport}, or {@code 404} if the service
-     *         does not exist (thrown by {@code SlaCalculationService} and mapped
-     *         by {@code GlobalExceptionHandler})
-     */
     @GetMapping
     public ResponseEntity<SlaReport> getSlaReport(
             @PathVariable Long id,
             @RequestParam(defaultValue = "DAY") SlaWindow window) {
         SlaReport report = slaCalculationService.calculate(id, window);
         return ResponseEntity.ok(report);
+    }
+
+    @PutMapping
+    public ResponseEntity<Void> updateSla(
+            @PathVariable Long id,
+            @RequestBody SlaUpdateRequest request) {
+        if (!registeredServiceRepository.existsById(id)) {
+            throw new ServiceNotFoundException("Service not found: " + id);
+        }
+        slaDefinitionRepository.upsert(
+                id,
+                request.getUptimePercent(),
+                request.getMaxResponseTimeMs(),
+                request.getMaxErrorRatePercent(),
+                request.getDescription());
+        return ResponseEntity.ok().build();
     }
 }
