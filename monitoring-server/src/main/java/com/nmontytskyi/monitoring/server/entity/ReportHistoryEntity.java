@@ -41,6 +41,7 @@ public class ReportHistoryEntity {
     public enum ReportType {
         SLA_SUMMARY,
         METRICS_DETAIL,
-        FULL
+        FULL,
+        SYSTEM_OVERVIEW
     }
 }
