@@ -4,6 +4,7 @@ import com.nmontytskyi.monitoring.server.config.AlertProperties;
 import com.nmontytskyi.monitoring.server.entity.AlertEventEntity;
 import com.nmontytskyi.monitoring.server.entity.AlertRuleEntity;
 import com.nmontytskyi.monitoring.server.entity.RegisteredServiceEntity;
+import com.nmontytskyi.monitoring.server.service.AppSettingsService;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,11 +19,12 @@ public class AlertNotificationService {
 
     private final JavaMailSender javaMailSender;
     private final AlertProperties alertProperties;
+    private final AppSettingsService appSettingsService;
 
     public void sendAlert(AlertEventEntity event,
                           AlertRuleEntity rule,
                           RegisteredServiceEntity service) {
-        String to = alertProperties.getNotificationTo();
+        String to = appSettingsService.get("notification.email.to", alertProperties.getNotificationTo());
         if (to == null || to.isBlank()) {
             log.warn("Alert notification skipped: notificationTo is not configured");
             return;
@@ -32,7 +34,7 @@ public class AlertNotificationService {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(alertProperties.getNotificationFrom());
+            helper.setFrom(appSettingsService.get("notification.email.from", alertProperties.getNotificationFrom()));
             helper.setTo(to.split(","));
             helper.setSubject(String.format("[MONITORING ALERT] %s — %s threshold exceeded",
                     service.getName(), rule.getMetricType()));
