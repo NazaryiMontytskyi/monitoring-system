@@ -178,9 +178,28 @@
             .catch(function () {});
     }
 
+    function attachClickHandlers() {
+        var ids = [
+            'sys-chart-avg-rt', 'sys-chart-status', 'sys-chart-avg-cpu',
+            'sys-chart-anomalies', 'rtBarChart'
+        ];
+        ids.forEach(function (id) {
+            var canvas = document.getElementById(id);
+            if (!canvas) return;
+            canvas.addEventListener('click', function () {
+                var chart = Chart.getChart(canvas);
+                if (!chart || typeof openChartModal !== 'function') return;
+                var card = canvas.closest('.chart-card');
+                var titleEl = card ? (card.querySelector('p') || card.querySelector('h2')) : null;
+                openChartModal(chart, titleEl ? titleEl.textContent.trim() : id);
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         if (!document.getElementById('sys-chart-avg-rt')) return;
         initCharts();
+        attachClickHandlers();
         fetchAndRender();
         setInterval(fetchAndRender, POLL_INTERVAL);
     });

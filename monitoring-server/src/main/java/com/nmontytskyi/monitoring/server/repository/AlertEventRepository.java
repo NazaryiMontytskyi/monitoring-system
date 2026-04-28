@@ -45,6 +45,13 @@ public interface AlertEventRepository extends JpaRepository<AlertEventEntity, Lo
             Pageable pageable
     );
 
+    Page<AlertEventEntity> findAllByServiceIdAndFiredAtBetweenOrderByFiredAtDesc(
+            Long serviceId,
+            LocalDateTime from,
+            LocalDateTime to,
+            Pageable pageable
+    );
+
     /**
      * Finds the most recent event fired for a specific alert rule.
      * Used by {@code AlertCooldownManager} to determine whether the cooldown

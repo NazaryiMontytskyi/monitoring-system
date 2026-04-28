@@ -16,15 +16,48 @@
         <h1 class="text-2xl font-semibold" style="color:#f1f5f9;">Reports</h1>
     </div>
 
+    <!-- Thymeleaf values exposed as JS variables for Alpine.js -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var _reportServiceId = /*[[${service.id}]]*/0;
+        var _reportDateFrom  = /*[[${thirtyDaysAgo}]]*/'';
+        var _reportDateTo    = /*[[${today}]]*/'';
+        /*]]>*/
+    </script>
+
     <!-- Generate report form -->
     <div class="rounded-xl shadow-lg p-6" style="background-color:#1e293b;"
          x-data="{
              reportType: 'sla',
-             from: '[[${thirtyDaysAgo}]]',
-             to: '[[${today}]]',
-             get downloadUrl() {
-                 return '/api/reports/' + [[${service.id}]] + '/' + this.reportType
-                     + '?from=' + this.from + '&to=' + this.to;
+             from: _reportDateFrom,
+             to: _reportDateTo,
+             loading: false,
+             errorMsg: '',
+             async downloadReport() {
+                 this.loading = true;
+                 this.errorMsg = '';
+                 const url = '/api/reports/' + _reportServiceId + '/' + this.reportType
+                           + '?from=' + this.from + '&to=' + this.to;
+                 try {
+                     const res = await fetch(url);
+                     if (!res.ok) {
+                         const body = await res.json().catch(() => ({}));
+                         this.errorMsg = body.error || 'Report generation failed (HTTP ' + res.status + ')';
+                         return;
+                     }
+                     const blob = await res.blob();
+                     const a = document.createElement('a');
+                     a.href = URL.createObjectURL(blob);
+                     a.download = this.reportType + '-report-' + this.from + '-' + this.to + '.pdf';
+                     document.body.appendChild(a);
+                     a.click();
+                     document.body.removeChild(a);
+                     URL.revokeObjectURL(a.href);
+                 } catch (e) {
+                     this.errorMsg = 'Network error. Please try again.';
+                 } finally {
+                     this.loading = false;
+                 }
              }
          }">
 
@@ -53,13 +86,21 @@
                        style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
             </div>
             <div>
-                <a :href="downloadUrl"
-                   class="block w-full text-center px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:brightness-110"
-                   style="background-color:#3b82f6;color:#fff;">
-                    ⬇ Download PDF
-                </a>
+                <button @click="downloadReport()"
+                        :disabled="loading"
+                        class="block w-full text-center px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        :class="loading ? 'opacity-60 cursor-not-allowed' : 'hover:brightness-110'"
+                        style="background-color:#3b82f6;color:#fff;">
+                    <span x-text="loading ? 'Generating…' : '⬇ Download PDF'">⬇ Download PDF</span>
+                </button>
             </div>
         </div>
+
+        <!-- Error message -->
+        <div x-show="errorMsg"
+             x-text="errorMsg"
+             class="mt-3 px-4 py-2 rounded-lg text-sm"
+             style="background-color:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;"></div>
     </div>
 
     <!-- Report history -->
