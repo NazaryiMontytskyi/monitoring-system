@@ -8,7 +8,8 @@
     <!-- Header row -->
     <div class="flex items-center justify-between">
         <h1 class="text-2xl font-semibold" style="color:#f1f5f9;">Dashboard</h1>
-        <span class="text-sm" style="color:#94a3b8;" id="refresh-countdown">Auto-refresh: 30s ↻</span>
+        <span class="text-sm" style="color:#94a3b8;" id="refresh-countdown"
+              th:attr="data-interval=${refreshInterval}">Auto-refresh: 30s ↻</span>
     </div>
 
     <!-- Stat cards -->

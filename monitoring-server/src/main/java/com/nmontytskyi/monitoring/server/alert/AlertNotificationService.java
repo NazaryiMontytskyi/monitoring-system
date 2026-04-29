@@ -24,6 +24,10 @@ public class AlertNotificationService {
     public void sendAlert(AlertEventEntity event,
                           AlertRuleEntity rule,
                           RegisteredServiceEntity service) {
+        if (!"true".equalsIgnoreCase(appSettingsService.get("notification.email.enabled", "true"))) {
+            log.info("Alert notification skipped: email notifications are disabled");
+            return;
+        }
         String to = appSettingsService.get("notification.email.to", alertProperties.getNotificationTo());
         if (to == null || to.isBlank()) {
             log.warn("Alert notification skipped: notificationTo is not configured");

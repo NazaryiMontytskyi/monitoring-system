@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Error ' + ${status}">Error</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body style="background-color:#0f172a;color:#f1f5f9;min-height:100vh;display:flex;align-items:center;justify-content:center;">
+    <div class="text-center max-w-md px-6">
+
+        <!-- Status code -->
+        <p class="text-8xl font-bold"
+           th:style="${status != null and status >= 500}
+               ? 'color:#ef4444;'
+               : (${status != null and status >= 400} ? 'color:#f59e0b;' : 'color:#3b82f6;')"
+           th:text="${status ?: '???'}">500</p>
+
+        <!-- Title -->
+        <h1 class="text-2xl font-semibold mt-4" style="color:#f1f5f9;"
+            th:text="${error ?: 'Unexpected Error'}">Internal Server Error</h1>
+
+        <!-- Human-friendly hint by status -->
+        <p class="text-sm mt-3" style="color:#94a3b8;"
+           th:text="${status == 400} ? 'The request was invalid or missing required data.' :
+                    (${status == 403} ? 'You do not have permission to access this resource.' :
+                    (${status == 404} ? 'The page or resource you requested does not exist.' :
+                    (${status == 405} ? 'This action is not allowed on the current resource.' :
+                    'Something went wrong on our end. Please try again later.')))">
+            Something went wrong.
+        </p>
+
+        <!-- Path -->
+        <p class="text-xs mt-2" style="color:#475569;">
+            <span th:if="${path}" th:text="'Path: ' + ${path}"></span>
+        </p>
+
+        <a th:href="@{/}" href="/"
+           class="inline-block mt-8 px-6 py-2 rounded-lg text-sm font-medium"
+           style="background-color:#3b82f6;color:#fff;">← Back to Dashboard</a>
+    </div>
+</body>
+</html>
