@@ -17,11 +17,13 @@ import com.nmontytskyi.monitoring.server.repository.ReportHistoryRepository;
 import com.nmontytskyi.monitoring.server.dto.response.ReportHistoryResponse;
 import com.nmontytskyi.monitoring.server.entity.ReportHistoryEntity;
 import com.nmontytskyi.monitoring.server.repository.SlaDefinitionRepository;
+import com.nmontytskyi.monitoring.server.scheduler.RetentionScheduler;
 import com.nmontytskyi.monitoring.server.service.AlertEventService;
 import com.nmontytskyi.monitoring.server.service.AlertRuleService;
 import com.nmontytskyi.monitoring.server.service.AppSettingsService;
 import com.nmontytskyi.monitoring.server.service.MetricsPersistenceService;
 import com.nmontytskyi.monitoring.server.service.RegisteredServiceService;
+import com.nmontytskyi.monitoring.server.service.RetentionService;
 import com.nmontytskyi.monitoring.server.sla.SlaCalculationService;
 import com.nmontytskyi.monitoring.server.sla.SlaWindow;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +59,8 @@ public class MvcController {
     private final ReportHistoryRepository reportHistoryRepository;
     private final AppSettingsService appSettingsService;
     private final SlaDefinitionRepository slaDefinitionRepository;
+    private final RetentionService retentionService;
+    private final RetentionScheduler retentionScheduler;
 
     @GetMapping("/")
     public String dashboard(Model model) {
@@ -98,6 +102,7 @@ public class MvcController {
         model.addAttribute("chartLabels", chartLabels);
         model.addAttribute("chartValues", chartValues);
         model.addAttribute("chartStatuses", chartStatuses);
+        model.addAttribute("refreshInterval", appSettingsService.get("dashboard.refresh.seconds", "7"));
         model.addAttribute("currentPath", "/");
         return "dashboard";
     }
@@ -239,15 +244,67 @@ public class MvcController {
                 .toList();
 
         model.addAttribute("services", servicesWithSla);
-        model.addAttribute("emailTo", appSettingsService.get("notification.email.to", ""));
+        model.addAttribute("emailTo",      appSettingsService.get("notification.email.to",      ""));
+        model.addAttribute("emailEnabled", appSettingsService.get("notification.email.enabled", "true"));
+        model.addAttribute("retentionEnabled",  appSettingsService.get("retention.enabled",             "true"));
+        model.addAttribute("metricDays",        appSettingsService.get("retention.metric_records.days", "30"));
+        model.addAttribute("alertDays",         appSettingsService.get("retention.alert_events.days",   "90"));
+        model.addAttribute("reportDays",        appSettingsService.get("retention.report_history.days", "180"));
+        model.addAttribute("retentionCron",     appSettingsService.get("retention.cron",                "0 0 3 * * *"));
+        model.addAttribute("refreshSeconds",    appSettingsService.get("dashboard.refresh.seconds",     "7"));
         model.addAttribute("currentPath", "/settings");
         return "settings";
     }
 
+    @PostMapping("/settings/dashboard")
+    public String saveDashboard(@RequestParam String refreshSeconds, RedirectAttributes redirectAttrs) {
+        int val;
+        try { val = Integer.parseInt(refreshSeconds); } catch (NumberFormatException e) { val = 7; }
+        appSettingsService.set("dashboard.refresh.seconds", String.valueOf(Math.max(3, val)));
+        redirectAttrs.addFlashAttribute("successMessage", "Dashboard settings updated");
+        return "redirect:/settings";
+    }
+
     @PostMapping("/settings/email")
-    public String saveEmail(@RequestParam String emailTo, RedirectAttributes redirectAttrs) {
-        appSettingsService.set("notification.email.to", emailTo.trim());
-        redirectAttrs.addFlashAttribute("successMessage", "Email updated successfully");
+    public String saveEmail(
+            @RequestParam(required = false, defaultValue = "") String emailTo,
+            @RequestParam(defaultValue = "false") String emailEnabled,
+            RedirectAttributes redirectAttrs) {
+        appSettingsService.set("notification.email.to",      emailTo.trim());
+        appSettingsService.set("notification.email.enabled", emailEnabled);
+        redirectAttrs.addFlashAttribute("successMessage", "Email settings updated");
+        return "redirect:/settings";
+    }
+
+    @PostMapping("/settings/retention")
+    public String saveRetention(
+            @RequestParam String retentionEnabled,
+            @RequestParam String metricDays,
+            @RequestParam String alertDays,
+            @RequestParam String reportDays,
+            @RequestParam String retentionCron,
+            RedirectAttributes redirectAttrs) {
+        appSettingsService.set("retention.enabled",             retentionEnabled);
+        appSettingsService.set("retention.metric_records.days", metricDays);
+        appSettingsService.set("retention.alert_events.days",   alertDays);
+        appSettingsService.set("retention.report_history.days", reportDays);
+        appSettingsService.set("retention.cron",                retentionCron);
+        retentionScheduler.reschedule();
+        redirectAttrs.addFlashAttribute("successMessage", "Retention policy updated");
+        return "redirect:/settings";
+    }
+
+    @PostMapping("/settings/retention/run")
+    public String runRetentionNow(RedirectAttributes redirectAttrs) {
+        RetentionService.RetentionResult result = retentionService.runCleanup();
+        if (result.skipped()) {
+            redirectAttrs.addFlashAttribute("successMessage", "Retention is disabled — nothing deleted");
+        } else {
+            redirectAttrs.addFlashAttribute("successMessage",
+                    "Cleanup done: " + result.deletedMetrics() + " metrics, " +
+                    result.deletedAlerts() + " alerts, " +
+                    result.deletedReports() + " reports deleted");
+        }
         return "redirect:/settings";
     }
 

@@ -3,7 +3,8 @@
 (function () {
     'use strict';
 
-    var REFRESH_INTERVAL = 7;
+    var _el = document.getElementById('refresh-countdown');
+    var REFRESH_INTERVAL = Math.max(3, parseInt((_el && _el.dataset.interval) || '7', 10) || 7);
 
     function isDashboard() {
         return window.location.pathname === '/';
