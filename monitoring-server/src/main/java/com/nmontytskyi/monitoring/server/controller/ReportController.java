@@ -2,6 +2,7 @@ package com.nmontytskyi.monitoring.server.controller;
 
 import com.nmontytskyi.monitoring.server.dto.response.ReportHistoryResponse;
 import com.nmontytskyi.monitoring.server.entity.ReportHistoryEntity;
+import com.nmontytskyi.monitoring.server.exception.ReportGenerationException;
 import com.nmontytskyi.monitoring.server.repository.ReportHistoryRepository;
 import com.nmontytskyi.monitoring.server.service.PdfReportService;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,19 @@ public class ReportController {
         byte[] pdf = pdfReportService.generateFullReport(serviceId, from, to);
         String filename = "full-report-" + serviceId + "-" + from + "-" + to + ".pdf";
         return buildPdfResponse(pdf, filename);
+    }
+
+    @GetMapping("/system")
+    public ResponseEntity<byte[]> systemReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        try {
+            byte[] pdf = pdfReportService.generateSystemReport(from, to);
+            String filename = "system-report-" + from + "-" + to + ".pdf";
+            return buildPdfResponse(pdf, filename);
+        } catch (ReportGenerationException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/{serviceId}/history")

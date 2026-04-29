@@ -6,8 +6,7 @@ spring:
     name: order-service
 
 monitoring:
-  server:
-    url: http://localhost:8080
-  service:
-    base-url: http://localhost:8082
-    actuator-url: http://localhost:8082/actuator
+  server-url: http://localhost:8080
+  service-host: localhost
+  service-port: 8082
+  actuator-url: http://localhost:8082/actuator
