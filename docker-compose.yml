@@ -75,8 +75,8 @@ services:
         condition: service_healthy
     environment:
       MONITORING_SERVER_URL: http://monitoring-server:8080
-      SERVICE_BASE_URL: http://demo-inventory-service:8081
-      SERVICE_ACTUATOR_URL: http://demo-inventory-service:8081/actuator
+      MONITORING_SERVICE_HOST: demo-inventory-service
+      MONITORING_ACTUATOR_URL: http://demo-inventory-service:8081/actuator
     networks:
       - monitoring-network
 
@@ -93,8 +93,8 @@ services:
         condition: service_healthy
     environment:
       MONITORING_SERVER_URL: http://monitoring-server:8080
-      SERVICE_BASE_URL: http://demo-order-service:8082
-      SERVICE_ACTUATOR_URL: http://demo-order-service:8082/actuator
+      MONITORING_SERVICE_HOST: demo-order-service
+      MONITORING_ACTUATOR_URL: http://demo-order-service:8082/actuator
     networks:
       - monitoring-network
 
@@ -111,7 +111,7 @@ services:
         condition: service_healthy
     environment:
       MONITORING_SERVER_URL: http://monitoring-server:8080
-      SERVICE_BASE_URL: http://demo-payment-service:8083
-      SERVICE_ACTUATOR_URL: http://demo-payment-service:8083/actuator
+      MONITORING_SERVICE_HOST: demo-payment-service
+      MONITORING_ACTUATOR_URL: http://demo-payment-service:8083/actuator
     networks:
       - monitoring-network

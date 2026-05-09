@@ -114,6 +114,14 @@
         </div>
 
         <div class="mt-4 pt-4 border-t flex justify-end gap-3" style="border-color:#334155;">
+            <form th:action="@{/services/{id}/delete(id=${service.id})}" method="post"
+                  onsubmit="return confirm('Delete service ' + /*[[${service.name}]]*/ '' + '? This cannot be undone.');">
+                <button type="submit"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        style="background-color:#ef4444;color:#fff;">
+                    Delete Service
+                </button>
+            </form>
             <a th:href="@{/services/{id}/reports(id=${service.id})}"
                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                style="background-color:#334155;color:#f1f5f9;">Reports</a>

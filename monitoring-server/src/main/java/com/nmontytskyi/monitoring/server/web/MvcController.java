@@ -218,6 +218,13 @@ public class MvcController {
         return "redirect:/alerts";
     }
 
+    @PostMapping("/services/{id}/delete")
+    public String deleteService(@PathVariable Long id, RedirectAttributes redirectAttrs) {
+        serviceService.deleteById(id);
+        redirectAttrs.addFlashAttribute("successMessage", "Service deleted successfully");
+        return "redirect:/";
+    }
+
     @PostMapping("/alerts/rules/{id}/delete")
     public String deleteAlertRule(@PathVariable Long id, RedirectAttributes redirectAttrs) {
         alertRuleService.deleteById(id);

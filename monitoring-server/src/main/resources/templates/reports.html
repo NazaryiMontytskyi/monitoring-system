@@ -36,8 +36,14 @@
              async downloadReport() {
                  this.loading = true;
                  this.errorMsg = '';
-                 const url = '/api/reports/' + _reportServiceId + '/' + this.reportType
-                           + '?from=' + this.from + '&to=' + this.to;
+                 let url;
+                 if (this.reportType === 'system') {
+                     url = `/api/reports/system?from=${this.from}&to=${this.to}`;
+                 } else if (this.reportType === 'sla') {
+                     url = `/api/reports/${_reportServiceId}/sla?from=${this.from}&to=${this.to}`;
+                 } else {
+                     url = `/api/reports/${_reportServiceId}/full?from=${this.from}&to=${this.to}`;
+                 }
                  try {
                      const res = await fetch(url);
                      if (!res.ok) {
@@ -71,6 +77,7 @@
                         style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
                     <option value="sla">SLA Summary</option>
                     <option value="full">Full Report</option>
+                    <option value="system">System Overview</option>
                 </select>
             </div>
             <div>
@@ -149,6 +156,11 @@
                            th:if="${report.reportType.name() == 'FULL'}"
                            class="text-xs px-2 py-1 rounded"
                            style="background-color:rgba(34,197,94,0.15);color:#22c55e;">⬇ PDF</a>
+                        <a th:if="${report.reportType.name() == 'SYSTEM_OVERVIEW'}"
+                           th:href="@{/api/reports/system(from=${#temporals.format(report.periodFrom,'yyyy-MM-dd')},to=${#temporals.format(report.periodTo,'yyyy-MM-dd')})}"
+                           class="px-3 py-1 rounded text-xs font-medium"
+                           style="background-color:#334155;color:#94a3b8;"
+                           download>⬇ PDF</a>
                     </td>
                 </tr>
             </tbody>
