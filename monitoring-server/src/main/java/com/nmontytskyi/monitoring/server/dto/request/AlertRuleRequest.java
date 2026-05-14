@@ -7,6 +7,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Inbound DTO for creating or updating an alert rule, specifying the metric type,
+ * comparator, threshold value, and cooldown period in minutes.
+ */
 @Data
 @Builder
 @NoArgsConstructor

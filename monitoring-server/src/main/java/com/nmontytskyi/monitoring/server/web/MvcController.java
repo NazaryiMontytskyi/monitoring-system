@@ -47,6 +47,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Spring MVC controller that serves the server-side rendered Thymeleaf pages.
+ *
+ * <p>Each handler method populates a {@link org.springframework.ui.Model} with the data
+ * required by the corresponding template and returns the template name. Page data is
+ * loaded eagerly on the initial HTTP GET; charts and live metrics are subsequently
+ * updated by JavaScript polling of the REST API.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.controller.DashboardApiController
+ */
 @Controller
 @RequiredArgsConstructor
 public class MvcController {

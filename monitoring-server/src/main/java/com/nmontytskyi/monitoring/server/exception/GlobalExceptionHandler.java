@@ -12,6 +12,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Centralised exception handler for the REST API layer.
+ *
+ * <p>Translates application-specific exceptions into appropriate HTTP responses with
+ * structured JSON error bodies. Handles {@link com.nmontytskyi.monitoring.server.exception.ServiceNotFoundException}
+ * (404), {@link com.nmontytskyi.monitoring.server.exception.ServiceAlreadyRegisteredException}
+ * (409), {@link com.nmontytskyi.monitoring.server.exception.ReportGenerationException}
+ * (500), and Spring's validation constraint violations (400).
+ *
+ * @author Nazar Montytskyi
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {

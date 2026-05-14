@@ -7,10 +7,13 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * Spring Data JPA repository for {@link AlertRuleEntity}.
+ * Spring Data JPA repository for {@link com.nmontytskyi.monitoring.server.entity.AlertRuleEntity}.
  *
- * <p>Used by the alert evaluation engine (FR-4) to load the active rules
- * for a service and by the REST API to expose the rule configuration.
+ * <p>Provides finder methods for retrieving enabled rules by service ID, used by
+ * {@link com.nmontytskyi.monitoring.server.alert.AlertEvaluationService} during each
+ * alert evaluation cycle.
+ *
+ * @author Nazar Montytskyi
  */
 @Repository
 public interface AlertRuleRepository extends JpaRepository<AlertRuleEntity, Long> {

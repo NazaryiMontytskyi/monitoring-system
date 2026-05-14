@@ -11,6 +11,21 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledFuture;
 
+/**
+ * Scheduled component that triggers periodic database cleanup according to the
+ * configured data-retention policy.
+ *
+ * <p>Reads the {@code retention.enabled}, {@code retention.frequency}, and
+ * {@code retention.time} settings at runtime from
+ * {@link com.nmontytskyi.monitoring.server.service.AppSettingsService} and delegates
+ * the actual deletion to {@link com.nmontytskyi.monitoring.server.service.RetentionService}.
+ * Running daily by default at 03:00, the scheduler removes metric records, alert events,
+ * and report history entries older than their respective retention windows.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.service.RetentionService
+ * @see com.nmontytskyi.monitoring.server.service.AppSettingsService
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

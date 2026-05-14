@@ -8,6 +8,20 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+/**
+ * In-memory cooldown tracker that prevents the same alert rule from firing repeatedly
+ * within its configured cooldown period.
+ *
+ * <p>For each rule the manager records the timestamp of the last firing. Before
+ * {@link com.nmontytskyi.monitoring.server.alert.AlertEvaluationService} creates a new
+ * {@link com.nmontytskyi.monitoring.server.entity.AlertEventEntity} it consults this
+ * component to verify the cooldown has elapsed. State is held in a
+ * {@link java.util.concurrent.ConcurrentHashMap} and is therefore not persisted across
+ * server restarts — after a restart all rules fire on their next breach.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.alert.AlertEvaluationService
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

@@ -10,6 +10,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * Service that enforces the data-retention policy by deleting records older than the
+ * configured retention windows.
+ *
+ * <p>Three retention windows are independently configurable (in days):
+ * {@code metric_records}, {@code alert_events}, and {@code report_history}.
+ * The actual deletion is triggered by {@link com.nmontytskyi.monitoring.server.scheduler.RetentionScheduler}
+ * on a daily or weekly schedule. All settings are read at runtime from
+ * {@link com.nmontytskyi.monitoring.server.service.AppSettingsService} so changes
+ * take effect without a server restart.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.scheduler.RetentionScheduler
+ * @see com.nmontytskyi.monitoring.server.service.AppSettingsService
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

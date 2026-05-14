@@ -20,6 +20,18 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * REST controller for managing alert rules and querying alert events.
+ *
+ * <p>Exposes endpoints to create, list, and delete
+ * {@link com.nmontytskyi.monitoring.server.entity.AlertRuleEntity alert rules}, and to
+ * retrieve the paginated log of fired
+ * {@link com.nmontytskyi.monitoring.server.entity.AlertEventEntity alert events}.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.service.AlertRuleService
+ * @see com.nmontytskyi.monitoring.server.service.AlertEventService
+ */
 @Validated
 @RestController
 @RequestMapping("/api/alerts")

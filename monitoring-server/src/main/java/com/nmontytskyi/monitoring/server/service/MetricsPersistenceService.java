@@ -21,6 +21,27 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Core service responsible for persisting incoming metric snapshots and triggering
+ * real-time anomaly detection for every saved record.
+ *
+ * <p>For each inbound {@link com.nmontytskyi.monitoring.server.dto.request.MetricSnapshotRequest}
+ * the service:
+ * <ol>
+ *   <li>Maps the request to a {@link com.nmontytskyi.monitoring.server.entity.MetricRecordEntity}
+ *       and persists it.</li>
+ *   <li>Fetches the 100 most recent records for the same service to build a historical
+ *       baseline.</li>
+ *   <li>Delegates to {@link com.nmontytskyi.monitoring.detector.AnomalyDetector} for
+ *       Z-score computation; updates {@code anomaly} and {@code zScore} fields when
+ *       sufficient history is available (≥ 10 records).</li>
+ *   <li>Triggers alert evaluation via {@link com.nmontytskyi.monitoring.server.alert.AlertEvaluationService}.</li>
+ * </ol>
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.detector.AnomalyDetector
+ * @see com.nmontytskyi.monitoring.server.alert.AlertEvaluationService
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

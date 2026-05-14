@@ -10,6 +10,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Application service for querying persisted alert events.
+ *
+ * <p>Alert events are created automatically by
+ * {@link com.nmontytskyi.monitoring.server.alert.AlertEvaluationService} whenever a rule
+ * threshold is breached. This service exposes paginated read access to the event log
+ * for the web dashboard and the REST API.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.entity.AlertEventEntity
+ * @see com.nmontytskyi.monitoring.server.alert.AlertEvaluationService
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

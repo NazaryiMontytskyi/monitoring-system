@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Single time-point DTO for per-service metric charts.
+ * Carries response time, health status, CPU, memory, thread, and GC metrics
+ * together with the anomaly flag and z-score for a specific polling instant.
+ */
 @Data
 @Builder
 @NoArgsConstructor

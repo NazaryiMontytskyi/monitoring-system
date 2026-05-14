@@ -14,6 +14,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Application service managing the lifecycle of registered microservices.
+ *
+ * <p>Provides operations to register new services, retrieve service details,
+ * list all monitored services, and unregister services that are no longer active.
+ * Each registered service is persisted as a {@link com.nmontytskyi.monitoring.server.entity.RegisteredServiceEntity}
+ * and assigned an initial {@link com.nmontytskyi.monitoring.server.entity.SlaDefinitionEntity}
+ * with the thresholds supplied during registration.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.entity.RegisteredServiceEntity
+ * @see com.nmontytskyi.monitoring.server.controller.ServiceController
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

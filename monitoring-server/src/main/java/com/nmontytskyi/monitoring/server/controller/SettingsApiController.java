@@ -7,6 +7,17 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * REST controller providing API access to application runtime settings.
+ *
+ * <p>Exposes endpoints for reading all settings and for updating the email notification
+ * address. All settings are persisted in the database via
+ * {@link com.nmontytskyi.monitoring.server.service.AppSettingsService} and take effect
+ * immediately without a server restart.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.service.AppSettingsService
+ */
 @RestController
 @RequestMapping("/api/settings")
 @RequiredArgsConstructor

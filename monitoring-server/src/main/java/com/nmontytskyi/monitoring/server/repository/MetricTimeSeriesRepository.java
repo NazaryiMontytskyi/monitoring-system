@@ -9,6 +9,18 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Spring Data JPA repository providing time-series and aggregated metric queries
+ * for the chart and anomaly endpoints.
+ *
+ * <p>Contains native SQL queries that aggregate {@link com.nmontytskyi.monitoring.server.entity.MetricRecordEntity}
+ * records into 30-second buckets for system-wide chart rendering, and JPQL queries
+ * for per-service historical data and recent anomaly retrieval.
+ * Uses {@code JOIN FETCH} on the service relationship where the controller
+ * subsequently accesses {@code service.name} to prevent lazy-loading exceptions.
+ *
+ * @author Nazar Montytskyi
+ */
 @org.springframework.stereotype.Repository
 public interface MetricTimeSeriesRepository extends Repository<MetricRecordEntity, Long> {
 

@@ -14,6 +14,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Application service for managing alert rules.
+ *
+ * <p>Supports CRUD operations on {@link com.nmontytskyi.monitoring.server.entity.AlertRuleEntity}
+ * records. Rules define a metric type, comparator, numeric threshold, and cooldown period.
+ * The {@link com.nmontytskyi.monitoring.server.alert.AlertEvaluationService} consults active
+ * rules on every metric collection cycle.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.entity.AlertRuleEntity
+ * @see com.nmontytskyi.monitoring.server.alert.AlertEvaluationService
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

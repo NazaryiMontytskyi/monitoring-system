@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO representing a registered service returned by the service registry endpoints.
+ * Includes current health status, average response time, and network coordinates.
+ */
 @Data
 @Builder
 @NoArgsConstructor

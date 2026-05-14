@@ -12,6 +12,19 @@ import org.springframework.web.client.RestClient;
 import java.time.Duration;
 import java.util.Optional;
 
+/**
+ * HTTP client for retrieving monitoring data from Spring Boot Actuator endpoints.
+ *
+ * <p>Sends GET requests to {@code /actuator/health} (service availability and status)
+ * and {@code /actuator/metrics} (JVM CPU, heap, thread, and GC metrics) on behalf of
+ * {@link com.nmontytskyi.monitoring.server.polling.MetricsPollingScheduler}.
+ * Connection and read timeouts are configurable via
+ * {@link com.nmontytskyi.monitoring.server.config.PollingProperties}.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.polling.MetricsPollingScheduler
+ * @see com.nmontytskyi.monitoring.server.config.PollingProperties
+ */
 @Slf4j
 @Component
 public class ActuatorClient {

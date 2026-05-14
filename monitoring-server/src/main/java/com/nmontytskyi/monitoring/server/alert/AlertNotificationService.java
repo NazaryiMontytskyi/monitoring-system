@@ -12,6 +12,19 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service responsible for dispatching email notifications when alert rules are breached.
+ *
+ * <p>Composes and sends an HTML email containing the alert message, the metric value
+ * that triggered the rule, and a timestamp. Email delivery is conditional on the
+ * {@code notification.email.enabled} setting managed by
+ * {@link com.nmontytskyi.monitoring.server.service.AppSettingsService}.
+ * SMTP credentials and host configuration are supplied via Spring Mail properties.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.alert.AlertEvaluationService
+ * @see com.nmontytskyi.monitoring.server.service.AppSettingsService
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

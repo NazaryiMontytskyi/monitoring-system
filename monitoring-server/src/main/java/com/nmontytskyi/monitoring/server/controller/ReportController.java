@@ -16,6 +16,18 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * REST controller that triggers PDF report generation and serves the resulting files
+ * as downloadable HTTP responses.
+ *
+ * <p>Delegates report generation to
+ * {@link com.nmontytskyi.monitoring.server.service.PdfReportService} and streams the
+ * resulting PDF bytes with {@code Content-Disposition: attachment}. Also exposes an
+ * endpoint for retrieving the report generation history of a service.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.service.PdfReportService
+ */
 @RestController
 @RequestMapping("/api/reports")
 @RequiredArgsConstructor

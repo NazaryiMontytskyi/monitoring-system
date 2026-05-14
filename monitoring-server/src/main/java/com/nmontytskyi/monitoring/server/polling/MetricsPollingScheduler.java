@@ -16,6 +16,24 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Scheduled component that periodically pulls health and JVM metrics from each
+ * registered service's Spring Boot Actuator endpoints.
+ *
+ * <p>Runs every {@code monitoring.polling.interval-seconds} (default: 30 s).
+ * For each active service it calls {@link com.nmontytskyi.monitoring.server.polling.ActuatorClient}
+ * to fetch {@code /actuator/health} and {@code /actuator/metrics}, then converts the
+ * responses into {@link com.nmontytskyi.monitoring.server.dto.request.MetricSnapshotRequest}
+ * objects and delegates persistence to
+ * {@link com.nmontytskyi.monitoring.server.service.MetricsPersistenceService}.
+ *
+ * <p>This pull-based collection complements the push-based collection performed by the
+ * monitoring starter's AOP aspects for per-request response-time data.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.polling.ActuatorClient
+ * @see com.nmontytskyi.monitoring.server.service.MetricsPersistenceService
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

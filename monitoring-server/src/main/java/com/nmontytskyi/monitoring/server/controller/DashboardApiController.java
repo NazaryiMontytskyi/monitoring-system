@@ -27,6 +27,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * REST controller powering the main dashboard page.
+ *
+ * <p>Aggregates the current status of all registered services into a
+ * {@link com.nmontytskyi.monitoring.server.dto.response.DashboardSummaryResponse}
+ * and exposes the five most recent alert events across all services.
+ * Responses are consumed directly by the Thymeleaf dashboard template on initial
+ * page load and refreshed periodically via fetch calls from the browser.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.dto.response.DashboardSummaryResponse
+ */
 @Validated
 @RestController
 @RequestMapping("/api/dashboard")

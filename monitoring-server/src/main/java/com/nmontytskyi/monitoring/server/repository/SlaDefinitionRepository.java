@@ -7,6 +7,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Spring Data JPA repository for {@link com.nmontytskyi.monitoring.server.entity.SlaDefinitionEntity}.
+ *
+ * <p>Uses a one-to-one relationship with {@link com.nmontytskyi.monitoring.server.entity.RegisteredServiceEntity}
+ * (keyed by service ID). The SLA definition holds the uptime, response-time, and
+ * error-rate thresholds that are evaluated by the SLA calculation service.
+ *
+ * @author Nazar Montytskyi
+ */
 public interface SlaDefinitionRepository extends JpaRepository<SlaDefinitionEntity, Long> {
 
     @Modifying

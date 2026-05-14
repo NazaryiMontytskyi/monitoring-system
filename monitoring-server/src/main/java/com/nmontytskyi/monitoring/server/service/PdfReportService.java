@@ -41,6 +41,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.Collection;
 
+/**
+ * Service responsible for generating PDF reports for monitored services and the overall system.
+ *
+ * <p>Supports three report types:
+ * <ul>
+ *   <li><b>SLA report</b> — SLA compliance summary for a single service.</li>
+ *   <li><b>Full service report</b> — complete metric history, anomaly log, and SLA
+ *       compliance for a single service.</li>
+ *   <li><b>System report</b> — aggregated data across all registered services for a
+ *       user-selected date range.</li>
+ * </ul>
+ * Each generated report is recorded in {@link com.nmontytskyi.monitoring.server.entity.ReportHistoryEntity}
+ * for audit and download-history purposes.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.entity.ReportHistoryEntity
+ * @see com.nmontytskyi.monitoring.server.controller.ReportController
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
