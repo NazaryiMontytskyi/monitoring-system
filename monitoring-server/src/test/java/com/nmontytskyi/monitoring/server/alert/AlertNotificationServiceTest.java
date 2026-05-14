@@ -7,6 +7,7 @@ import com.nmontytskyi.monitoring.server.entity.AlertRuleEntity;
 import com.nmontytskyi.monitoring.server.entity.AlertRuleEntity.Comparator;
 import com.nmontytskyi.monitoring.server.entity.AlertRuleEntity.MetricType;
 import com.nmontytskyi.monitoring.server.entity.RegisteredServiceEntity;
+import com.nmontytskyi.monitoring.server.service.AppSettingsService;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,6 +30,7 @@ class AlertNotificationServiceTest {
 
     @Mock private JavaMailSender javaMailSender;
     @Mock private AlertProperties alertProperties;
+    @Mock private AppSettingsService appSettingsService;
 
     @InjectMocks
     private AlertNotificationService notificationService;
@@ -62,8 +66,9 @@ class AlertNotificationServiceTest {
 
     @Test
     void sendAlert_success_callsJavaMailSender() throws Exception {
-        when(alertProperties.getNotificationTo()).thenReturn("admin@example.com");
-        when(alertProperties.getNotificationFrom()).thenReturn("monitoring@example.com");
+        when(appSettingsService.get(eq("notification.email.enabled"), any())).thenReturn("true");
+        when(appSettingsService.get(eq("notification.email.to"), any())).thenReturn("admin@example.com");
+        when(appSettingsService.get(eq("notification.email.from"), any())).thenReturn("monitoring@example.com");
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
@@ -74,7 +79,8 @@ class AlertNotificationServiceTest {
 
     @Test
     void sendAlert_blankNotificationTo_skipsEmail() {
-        when(alertProperties.getNotificationTo()).thenReturn("");
+        when(appSettingsService.get(eq("notification.email.enabled"), any())).thenReturn("true");
+        when(appSettingsService.get(eq("notification.email.to"), any())).thenReturn("");
 
         assertThatNoException().isThrownBy(() -> notificationService.sendAlert(event, rule, service));
 
@@ -83,8 +89,9 @@ class AlertNotificationServiceTest {
 
     @Test
     void sendAlert_mailSenderThrows_doesNotPropagateException() {
-        when(alertProperties.getNotificationTo()).thenReturn("admin@example.com");
-        when(alertProperties.getNotificationFrom()).thenReturn("monitoring@example.com");
+        when(appSettingsService.get(eq("notification.email.enabled"), any())).thenReturn("true");
+        when(appSettingsService.get(eq("notification.email.to"), any())).thenReturn("admin@example.com");
+        when(appSettingsService.get(eq("notification.email.from"), any())).thenReturn("monitoring@example.com");
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
         doThrow(new MailSendException("SMTP error")).when(javaMailSender).send(any(MimeMessage.class));
@@ -94,18 +101,15 @@ class AlertNotificationServiceTest {
 
     @Test
     void sendAlert_subjectContainsServiceName() throws Exception {
-        when(alertProperties.getNotificationTo()).thenReturn("admin@example.com");
-        when(alertProperties.getNotificationFrom()).thenReturn("monitoring@example.com");
-
+        when(appSettingsService.get(eq("notification.email.enabled"), any())).thenReturn("true");
+        when(appSettingsService.get(eq("notification.email.to"), any())).thenReturn("admin@example.com");
+        when(appSettingsService.get(eq("notification.email.from"), any())).thenReturn("monitoring@example.com");
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
         notificationService.sendAlert(event, rule, service);
 
-        // The MimeMessage was sent — verify createMimeMessage was called (subject is set via helper internally)
         verify(javaMailSender).createMimeMessage();
         verify(javaMailSender).send(mimeMessage);
-        // Subject verification: we confirm service name presence indirectly via successful method call
-        // and the implementation always formats subject as "[MONITORING ALERT] {serviceName} — {metricType}..."
     }
 }

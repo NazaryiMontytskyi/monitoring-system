@@ -22,7 +22,4 @@ public class AlertRuleResponse {
     private boolean enabled;
     private int cooldownMinutes;
     private LocalDateTime createdAt;
-    private boolean predictiveEnabled;
-    private int lookaheadMinutes;
-    private int minDataPoints;
 }

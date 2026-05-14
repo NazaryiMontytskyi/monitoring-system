@@ -32,6 +32,4 @@ public interface AlertRuleRepository extends JpaRepository<AlertRuleEntity, Long
      * @return enabled rules to evaluate
      */
     List<AlertRuleEntity> findAllByServiceIdAndEnabledTrue(Long serviceId);
-
-    List<AlertRuleEntity> findAllByPredictiveEnabledTrueAndEnabledTrue();
 }

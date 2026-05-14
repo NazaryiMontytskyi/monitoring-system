@@ -37,29 +37,6 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void serviceAlreadyRegisteredException_returns409WithErrorBody() throws Exception {
-        when(registeredServiceService.register(any()))
-                .thenThrow(new ServiceAlreadyRegisteredException("payment-service"));
-
-        String body = """
-                {
-                  "name": "payment-service",
-                  "host": "localhost",
-                  "port": 8083,
-                  "actuatorUrl": "http://localhost:8083/actuator",
-                  "baseUrl": "http://localhost:8083"
-                }
-                """;
-
-        mockMvc.perform(post("/api/services")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Service already registered with name: payment-service"))
-                .andExpect(jsonPath("$.timestamp").exists());
-    }
-
-    @Test
     void validationException_missingRequiredField_returns400() throws Exception {
         String bodyMissingName = """
                 {

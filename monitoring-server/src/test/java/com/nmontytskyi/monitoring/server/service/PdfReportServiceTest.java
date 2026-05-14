@@ -97,7 +97,7 @@ class PdfReportServiceTest {
         when(metricRecordRepository.findByServiceIdAndRecordedAtBetweenOrderByRecordedAtAsc(
                 eq(1L), any(), any())).thenReturn(List.of(buildRecord()));
         when(slaCalculationService.calculate(1L, SlaWindow.MONTH)).thenReturn(slaReport);
-        when(alertEventRepository.findAllByFiredAtBetweenOrderByFiredAtDesc(any(), any(), any()))
+        when(alertEventRepository.findAllByServiceIdAndFiredAtBetweenOrderByFiredAtDesc(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
         when(reportHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -116,7 +116,7 @@ class PdfReportServiceTest {
         when(metricRecordRepository.findByServiceIdAndRecordedAtBetweenOrderByRecordedAtAsc(
                 eq(1L), any(), any())).thenReturn(List.of(buildRecord()));
         when(slaCalculationService.calculate(1L, SlaWindow.MONTH)).thenReturn(slaReport);
-        when(alertEventRepository.findAllByFiredAtBetweenOrderByFiredAtDesc(any(), any(), any()))
+        when(alertEventRepository.findAllByServiceIdAndFiredAtBetweenOrderByFiredAtDesc(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
         when(reportHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -144,7 +144,7 @@ class PdfReportServiceTest {
         when(metricRecordRepository.findByServiceIdAndRecordedAtBetweenOrderByRecordedAtAsc(
                 eq(1L), any(), any())).thenReturn(List.of(buildRecord()));
         when(slaCalculationService.calculate(1L, SlaWindow.MONTH)).thenReturn(slaReport);
-        when(alertEventRepository.findAllByFiredAtBetweenOrderByFiredAtDesc(any(), any(), any()))
+        when(alertEventRepository.findAllByServiceIdAndFiredAtBetweenOrderByFiredAtDesc(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
         when(reportHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 

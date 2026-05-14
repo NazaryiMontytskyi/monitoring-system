@@ -6,7 +6,6 @@ spring:
     name: payment-service
 
 monitoring:
-  server-url: http://localhost:8080
-  service-host: localhost
-  service-port: 8083
-  actuator-url: http://localhost:8083/actuator
+  server-url: ${MONITORING_SERVER_URL:http://localhost:8080}
+  actuator-url: ${MONITORING_ACTUATOR_URL:http://localhost:8083/actuator}
+  base-url: ${MONITORING_BASE_URL:http://localhost:8083}

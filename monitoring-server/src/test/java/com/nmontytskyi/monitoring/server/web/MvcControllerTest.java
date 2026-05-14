@@ -9,10 +9,15 @@ import com.nmontytskyi.monitoring.server.dto.response.DashboardSummaryResponse;
 import com.nmontytskyi.monitoring.server.dto.response.ServiceResponse;
 import com.nmontytskyi.monitoring.server.entity.AlertRuleEntity;
 import com.nmontytskyi.monitoring.server.exception.ServiceNotFoundException;
+import com.nmontytskyi.monitoring.server.repository.ReportHistoryRepository;
+import com.nmontytskyi.monitoring.server.repository.SlaDefinitionRepository;
+import com.nmontytskyi.monitoring.server.scheduler.RetentionScheduler;
 import com.nmontytskyi.monitoring.server.service.AlertEventService;
 import com.nmontytskyi.monitoring.server.service.AlertRuleService;
+import com.nmontytskyi.monitoring.server.service.AppSettingsService;
 import com.nmontytskyi.monitoring.server.service.MetricsPersistenceService;
 import com.nmontytskyi.monitoring.server.service.RegisteredServiceService;
+import com.nmontytskyi.monitoring.server.service.RetentionService;
 import com.nmontytskyi.monitoring.server.sla.SlaCalculationService;
 import com.nmontytskyi.monitoring.server.sla.SlaWindow;
 import org.junit.jupiter.api.Test;
@@ -61,6 +66,21 @@ class MvcControllerTest {
 
     @MockBean
     private AlertEventService alertEventService;
+
+    @MockBean
+    private ReportHistoryRepository reportHistoryRepository;
+
+    @MockBean
+    private AppSettingsService appSettingsService;
+
+    @MockBean
+    private SlaDefinitionRepository slaDefinitionRepository;
+
+    @MockBean
+    private RetentionService retentionService;
+
+    @MockBean
+    private RetentionScheduler retentionScheduler;
 
     // ── 1 ──────────────────────────────────────────────────────────────────
 
@@ -210,6 +230,25 @@ class MvcControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("DOWN")))
                 .andExpect(content().string(containsString("DEGRADED")));
+    }
+
+    // ── 11 ─────────────────────────────────────────────────────────────────
+
+    @Test
+    void saveRetention_acceptsFrequencyAndTime_redirectsToSettings() throws Exception {
+        doNothing().when(retentionScheduler).reschedule();
+
+        mockMvc.perform(post("/settings/retention")
+                        .param("retentionEnabled", "true")
+                        .param("metricDays", "30")
+                        .param("alertDays", "90")
+                        .param("reportDays", "180")
+                        .param("retentionFrequency", "daily")
+                        .param("retentionTime", "03:00"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/settings"));
+
+        verify(retentionScheduler).reschedule();
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

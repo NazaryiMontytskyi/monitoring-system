@@ -268,20 +268,30 @@
                     </div>
                 </div>
 
-                <!-- Cron schedule -->
-                <div>
-                    <label class="block text-xs mb-1" style="color:#94a3b8;">Cleanup schedule (cron)</label>
-                    <input type="text" name="retentionCron"
-                           th:value="${retentionCron}"
-                           placeholder="0 0 3 * * *"
-                           class="w-full px-3 py-2 rounded-lg text-sm border"
-                           style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;"
-                           required>
-                    <p class="text-xs mt-1" style="color:#64748b;">
-                        6-field Spring cron: <code style="color:#94a3b8;">seconds minutes hours day month weekday</code>
-                        — default <code style="color:#94a3b8;">0 0 3 * * *</code> runs daily at 03:00
-                    </p>
+                <!-- Schedule frequency/time -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Run every</label>
+                        <select name="retentionFrequency"
+                                class="w-full px-3 py-2 rounded-lg text-sm border"
+                                style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                            <option value="6h"     th:selected="${retentionFrequency == '6h'}">Every 6 hours</option>
+                            <option value="12h"    th:selected="${retentionFrequency == '12h'}">Every 12 hours</option>
+                            <option value="daily"  th:selected="${retentionFrequency == 'daily'}">Daily</option>
+                            <option value="weekly" th:selected="${retentionFrequency == 'weekly'}">Weekly (Sunday)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">At time</label>
+                        <input type="time" name="retentionTime"
+                               th:value="${retentionTime}"
+                               class="w-full px-3 py-2 rounded-lg text-sm border"
+                               style="background-color:#0f172a;color:#f1f5f9;border-color:#334155;">
+                    </div>
                 </div>
+                <p class="mt-2 text-xs" style="color:#475569;">
+                    Cron: <span th:text="${retentionCron}" class="font-mono">—</span>
+                </p>
 
                 <button type="submit"
                         class="px-4 py-2 rounded-lg text-sm font-medium"

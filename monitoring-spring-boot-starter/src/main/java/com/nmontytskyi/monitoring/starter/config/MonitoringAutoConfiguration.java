@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 
@@ -54,8 +55,9 @@ public class MonitoringAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public ServiceRegistrationBean serviceRegistrationBean(MonitoringServerClient client,
-                                                           MonitoringProperties props) {
-        return new ServiceRegistrationBean(client, props);
+                                                           MonitoringProperties props,
+                                                           Environment environment) {
+        return new ServiceRegistrationBean(client, props, environment);
     }
 
     @Bean

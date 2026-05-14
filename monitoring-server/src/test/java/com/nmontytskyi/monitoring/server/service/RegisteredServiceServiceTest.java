@@ -4,7 +4,6 @@ import com.nmontytskyi.monitoring.model.HealthStatus;
 import com.nmontytskyi.monitoring.server.dto.request.ServiceRegistrationRequest;
 import com.nmontytskyi.monitoring.server.dto.response.ServiceResponse;
 import com.nmontytskyi.monitoring.server.entity.RegisteredServiceEntity;
-import com.nmontytskyi.monitoring.server.exception.ServiceAlreadyRegisteredException;
 import com.nmontytskyi.monitoring.server.exception.ServiceNotFoundException;
 import com.nmontytskyi.monitoring.server.repository.RegisteredServiceRepository;
 import org.junit.jupiter.api.Test;
@@ -33,16 +32,16 @@ class RegisteredServiceServiceTest {
     private RegisteredServiceService service;
 
     @Test
-    void register_success_returnsServiceResponse() {
+    void register_newService_createsAndReturnsResponse() {
         ServiceRegistrationRequest req = ServiceRegistrationRequest.builder()
                 .name("inventory-service")
-                .host("localhost")
+                .host("demo-inventory-service")
                 .port(8081)
-                .actuatorUrl("http://localhost:8081/actuator")
-                .baseUrl("http://localhost:8081")
+                .actuatorUrl("http://demo-inventory-service:8081/actuator")
+                .baseUrl("http://demo-inventory-service:8081")
                 .build();
 
-        when(repository.existsByName("inventory-service")).thenReturn(false);
+        when(repository.findByName("inventory-service")).thenReturn(Optional.empty());
         when(repository.save(any())).thenAnswer(inv -> {
             RegisteredServiceEntity e = inv.getArgument(0);
             e.setId(1L);
@@ -58,21 +57,27 @@ class RegisteredServiceServiceTest {
     }
 
     @Test
-    void register_duplicateName_throwsServiceAlreadyRegisteredException() {
+    void register_existingService_updatesConnectionDetailsAndReturnsExistingId() {
+        RegisteredServiceEntity existing = buildEntity(42L, "payment-service");
+        existing.setActuatorUrl("http://localhost:8083/actuator");
+
         ServiceRegistrationRequest req = ServiceRegistrationRequest.builder()
-                .name("duplicate-service")
-                .host("localhost")
-                .port(8082)
-                .actuatorUrl("http://localhost:8082/actuator")
+                .name("payment-service")
+                .host("demo-payment-service")
+                .port(8083)
+                .actuatorUrl("http://demo-payment-service:8083/actuator")
+                .baseUrl("http://demo-payment-service:8083")
                 .build();
 
-        when(repository.existsByName("duplicate-service")).thenReturn(true);
+        when(repository.findByName("payment-service")).thenReturn(Optional.of(existing));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThatThrownBy(() -> service.register(req))
-                .isInstanceOf(ServiceAlreadyRegisteredException.class)
-                .hasMessageContaining("duplicate-service");
+        ServiceResponse result = service.register(req);
 
-        verify(repository, never()).save(any());
+        assertThat(result.getId()).isEqualTo(42L);
+        assertThat(result.getActuatorUrl()).isEqualTo("http://demo-payment-service:8083/actuator");
+        assertThat(result.getStatus()).isEqualTo(HealthStatus.UNKNOWN);
+        verify(repository).save(existing);
     }
 
     @Test

@@ -4,7 +4,6 @@ import com.nmontytskyi.monitoring.model.HealthStatus;
 import com.nmontytskyi.monitoring.server.dto.request.ServiceRegistrationRequest;
 import com.nmontytskyi.monitoring.server.dto.response.ServiceResponse;
 import com.nmontytskyi.monitoring.server.entity.RegisteredServiceEntity;
-import com.nmontytskyi.monitoring.server.exception.ServiceAlreadyRegisteredException;
 import com.nmontytskyi.monitoring.server.exception.ServiceNotFoundException;
 import com.nmontytskyi.monitoring.server.repository.RegisteredServiceRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,21 +23,32 @@ public class RegisteredServiceService {
 
     @Transactional
     public ServiceResponse register(ServiceRegistrationRequest request) {
-        if (repository.existsByName(request.getName())) {
-            throw new ServiceAlreadyRegisteredException(request.getName());
-        }
-        RegisteredServiceEntity entity = RegisteredServiceEntity.builder()
-                .name(request.getName())
-                .host(request.getHost())
-                .port(request.getPort())
-                .actuatorUrl(request.getActuatorUrl())
-                .baseUrl(request.getBaseUrl())
-                .status(HealthStatus.UNKNOWN)
-                .lastSeenAt(LocalDateTime.now())
-                .build();
-        RegisteredServiceEntity saved = repository.save(entity);
-        log.info("Registered service '{}' with id={}", saved.getName(), saved.getId());
-        return toResponse(saved);
+        return repository.findByName(request.getName())
+                .map(existing -> {
+                    existing.setHost(request.getHost());
+                    existing.setPort(request.getPort());
+                    existing.setActuatorUrl(request.getActuatorUrl());
+                    existing.setBaseUrl(request.getBaseUrl());
+                    existing.setStatus(HealthStatus.UNKNOWN);
+                    existing.setLastSeenAt(LocalDateTime.now());
+                    RegisteredServiceEntity saved = repository.save(existing);
+                    log.info("Re-registered service '{}' with id={}", saved.getName(), saved.getId());
+                    return toResponse(saved);
+                })
+                .orElseGet(() -> {
+                    RegisteredServiceEntity entity = RegisteredServiceEntity.builder()
+                            .name(request.getName())
+                            .host(request.getHost())
+                            .port(request.getPort())
+                            .actuatorUrl(request.getActuatorUrl())
+                            .baseUrl(request.getBaseUrl())
+                            .status(HealthStatus.UNKNOWN)
+                            .lastSeenAt(LocalDateTime.now())
+                            .build();
+                    RegisteredServiceEntity saved = repository.save(entity);
+                    log.info("Registered service '{}' with id={}", saved.getName(), saved.getId());
+                    return toResponse(saved);
+                });
     }
 
     @Transactional(readOnly = true)

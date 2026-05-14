@@ -12,6 +12,7 @@ import org.springframework.scheduling.support.CronTrigger;
 
 import java.util.concurrent.ScheduledFuture;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -74,5 +75,27 @@ class RetentionSchedulerTest {
         retentionScheduler.scheduleFromSettings();
 
         verify(taskScheduler).schedule(any(Runnable.class), any(CronTrigger.class));
+    }
+
+    // ── buildCron ─────────────────────────────────────────────────────────────
+
+    @Test
+    void buildCron_daily_returnsCorrectCron() {
+        assertThat(RetentionScheduler.buildCron("daily", "03:00")).isEqualTo("0 0 3 * * *");
+    }
+
+    @Test
+    void buildCron_6h_returnsCorrectCron() {
+        assertThat(RetentionScheduler.buildCron("6h", "00:00")).isEqualTo("0 0 */6 * * *");
+    }
+
+    @Test
+    void buildCron_12h_returnsCorrectCron() {
+        assertThat(RetentionScheduler.buildCron("12h", "00:30")).isEqualTo("0 30 */12 * * *");
+    }
+
+    @Test
+    void buildCron_weekly_returnsCorrectCron() {
+        assertThat(RetentionScheduler.buildCron("weekly", "04:30")).isEqualTo("0 30 4 * * 0");
     }
 }

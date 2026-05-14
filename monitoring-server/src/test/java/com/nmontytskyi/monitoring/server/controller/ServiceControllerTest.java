@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nmontytskyi.monitoring.model.HealthStatus;
 import com.nmontytskyi.monitoring.server.dto.request.ServiceRegistrationRequest;
 import com.nmontytskyi.monitoring.server.dto.response.ServiceResponse;
-import com.nmontytskyi.monitoring.server.exception.ServiceAlreadyRegisteredException;
 import com.nmontytskyi.monitoring.server.exception.ServiceNotFoundException;
 import com.nmontytskyi.monitoring.server.service.RegisteredServiceService;
 import org.junit.jupiter.api.Test;
@@ -61,21 +60,23 @@ class ServiceControllerTest {
     }
 
     @Test
-    void post_register_duplicate_returns409() throws Exception {
+    void post_register_existingService_returns201WithExistingId() throws Exception {
         ServiceRegistrationRequest req = ServiceRegistrationRequest.builder()
-                .name("duplicate")
-                .host("localhost")
-                .port(8081)
-                .actuatorUrl("http://localhost:8081/actuator")
+                .name("payment-service")
+                .host("demo-payment-service")
+                .port(8083)
+                .actuatorUrl("http://demo-payment-service:8083/actuator")
                 .build();
 
-        when(service.register(any())).thenThrow(new ServiceAlreadyRegisteredException("duplicate"));
+        when(service.register(any())).thenReturn(buildServiceResponse(42L, "payment-service"));
 
         mockMvc.perform(post("/api/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").exists());
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", containsString("/api/services/42")))
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.name").value("payment-service"));
     }
 
     @Test

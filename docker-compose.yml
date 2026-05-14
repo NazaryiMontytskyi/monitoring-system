@@ -75,8 +75,8 @@ services:
         condition: service_healthy
     environment:
       MONITORING_SERVER_URL: http://monitoring-server:8080
-      MONITORING_SERVICE_HOST: demo-inventory-service
       MONITORING_ACTUATOR_URL: http://demo-inventory-service:8081/actuator
+      MONITORING_BASE_URL: http://localhost:8081
     networks:
       - monitoring-network
 
@@ -93,8 +93,8 @@ services:
         condition: service_healthy
     environment:
       MONITORING_SERVER_URL: http://monitoring-server:8080
-      MONITORING_SERVICE_HOST: demo-order-service
       MONITORING_ACTUATOR_URL: http://demo-order-service:8082/actuator
+      MONITORING_BASE_URL: http://localhost:8082
     networks:
       - monitoring-network
 
@@ -111,7 +111,7 @@ services:
         condition: service_healthy
     environment:
       MONITORING_SERVER_URL: http://monitoring-server:8080
-      MONITORING_SERVICE_HOST: demo-payment-service
       MONITORING_ACTUATOR_URL: http://demo-payment-service:8083/actuator
+      MONITORING_BASE_URL: http://localhost:8083
     networks:
       - monitoring-network

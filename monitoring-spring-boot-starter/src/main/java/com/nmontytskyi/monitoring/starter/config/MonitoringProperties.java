@@ -29,6 +29,9 @@ public class MonitoringProperties {
     /** Actuator base URL (auto-derived from serviceHost:servicePort if blank). */
     private String actuatorUrl;
 
+    /** Public base URL of this service shown in the monitoring UI (auto-derived from serviceHost:servicePort if blank). */
+    private String baseUrl;
+
     /** Set to {@code false} to completely disable monitoring for this service. */
     private boolean enabled = true;
 
