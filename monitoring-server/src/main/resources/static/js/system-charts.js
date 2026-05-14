@@ -196,10 +196,92 @@
         });
     }
 
+    function statusColor(status) {
+        if (status === 'UP')       return '#22c55e';
+        if (status === 'DEGRADED') return '#f59e0b';
+        if (status === 'DOWN')     return '#ef4444';
+        return '#94a3b8';
+    }
+
+    function initAnomalyModal() {
+        var modal   = document.getElementById('anomaly-modal');
+        var btnOpen = document.getElementById('btn-anomaly-list');
+        var btnClose = document.getElementById('btn-anomaly-close');
+        if (!modal || !btnOpen) return;
+
+        function openModal() {
+            modal.style.display = 'flex';
+            loadAnomalies();
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        btnOpen.addEventListener('click', function (e) {
+            e.stopPropagation();
+            openModal();
+        });
+
+        btnClose.addEventListener('click', closeModal);
+
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeModal();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeModal();
+        });
+    }
+
+    function loadAnomalies() {
+        var tbody    = document.getElementById('anomaly-table-body');
+        var emptyMsg = document.getElementById('anomaly-empty-msg');
+        var table    = document.getElementById('anomaly-table');
+        if (!tbody) return;
+
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#94a3b8;">Loading…</td></tr>';
+        if (emptyMsg) emptyMsg.style.display = 'none';
+        if (table)    table.style.display = '';
+
+        fetch('/api/metrics/anomalies?minutes=30&limit=100')
+            .then(function (res) { return res.ok ? res.json() : []; })
+            .then(function (rows) {
+                tbody.innerHTML = '';
+
+                if (!Array.isArray(rows) || rows.length === 0) {
+                    if (table)    table.style.display = 'none';
+                    if (emptyMsg) emptyMsg.style.display = '';
+                    return;
+                }
+
+                rows.forEach(function (r, i) {
+                    var tr = document.createElement('tr');
+                    tr.style.backgroundColor = i % 2 === 0 ? '#1e293b' : '#162032';
+
+                    var time = fmtTime(r.recordedAt);
+                    var color = statusColor(r.status);
+
+                    tr.innerHTML =
+                        '<td class="px-4 py-3" style="color:#94a3b8;">' + time + '</td>' +
+                        '<td class="px-4 py-3 font-medium" style="color:#f1f5f9;">' + (r.serviceName || '—') + '</td>' +
+                        '<td class="px-4 py-3"><span style="color:' + color + ';font-weight:600;">' + (r.status || '—') + '</span></td>' +
+                        '<td class="px-4 py-3" style="color:#94a3b8;">' + r.responseTimeMs + ' ms</td>' +
+                        '<td class="px-4 py-3" style="color:#fca5a5;">' + Number(r.zScore).toFixed(2) + '</td>';
+
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(function () {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#ef4444;">Failed to load anomalies.</td></tr>';
+            });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         if (!document.getElementById('sys-chart-avg-rt')) return;
         initCharts();
         attachClickHandlers();
+        initAnomalyModal();
         fetchAndRender();
         setInterval(fetchAndRender, POLL_INTERVAL);
     });

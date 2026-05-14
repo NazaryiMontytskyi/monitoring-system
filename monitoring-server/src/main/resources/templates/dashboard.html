@@ -60,7 +60,12 @@
                 <div style="height:180px;"><canvas id="sys-chart-avg-cpu"></canvas></div>
             </div>
             <div class="rounded-xl p-4 chart-card" style="background-color:#1f2937;" title="Натисніть для детального перегляду">
-                <p class="text-sm mb-2" style="color:#ef4444;">Anomalies / min</p>
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm" style="color:#ef4444;">Anomalies / min</p>
+                    <button id="btn-anomaly-list"
+                            class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                            style="background-color:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;">LIST</button>
+                </div>
                 <div style="height:180px;"><canvas id="sys-chart-anomalies"></canvas></div>
             </div>
         </div>
@@ -237,6 +242,37 @@
         </div>
 
         <p x-show="error" x-cloak class="text-xs mt-2" style="color:#ef4444;" x-text="error"></p>
+    </div>
+
+    <!-- Anomaly List Modal -->
+    <div id="anomaly-modal"
+         style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);"
+         class="flex items-center justify-center p-4">
+        <div style="background-color:#1e293b;border:1px solid #334155;border-radius:0.75rem;width:100%;max-width:800px;max-height:80vh;display:flex;flex-direction:column;">
+            <div class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid #334155;">
+                <h2 class="text-base font-semibold" style="color:#f1f5f9;">Anomalies</h2>
+                <button id="btn-anomaly-close"
+                        style="color:#94a3b8;font-size:1.25rem;line-height:1;background:none;border:none;cursor:pointer;">&times;</button>
+            </div>
+            <div style="overflow-y:auto;flex:1;">
+                <table class="w-full text-sm" id="anomaly-table">
+                    <thead style="position:sticky;top:0;background-color:#0f172a;">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Time</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Service</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Status</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Response Time</th>
+                            <th class="px-4 py-3 text-left font-medium" style="color:#94a3b8;">Z-Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="anomaly-table-body"></tbody>
+                </table>
+                <p id="anomaly-empty-msg"
+                   style="display:none;padding:2rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
+                    No anomalies in the last 30 minutes
+                </p>
+            </div>
+        </div>
     </div>
 
     <script th:src="@{/js/system-charts.js}" defer></script>

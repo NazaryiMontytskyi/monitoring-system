@@ -25,6 +25,16 @@ public interface MetricTimeSeriesRepository extends Repository<MetricRecordEntit
             @Param("source") MetricRecordEntity.MetricSource source,
             Pageable pageable);
 
+    @Query("""
+            SELECT m FROM MetricRecordEntity m
+            WHERE m.anomaly = true
+              AND m.recordedAt >= :from
+            ORDER BY m.recordedAt DESC
+            """)
+    List<MetricRecordEntity> findRecentAnomalies(
+            @Param("from") LocalDateTime from,
+            Pageable pageable);
+
     @Query(value = """
             SELECT
                 TO_TIMESTAMP(FLOOR(EXTRACT(EPOCH FROM recorded_at) / 30) * 30)::timestamp AS bucket,
