@@ -88,9 +88,13 @@ public class AlertEvaluationService {
             }
         }
 
-        boolean violated = rule.getComparator() == Comparator.GT
-                ? metricValue > rule.getThreshold()
-                : metricValue < rule.getThreshold();
+        boolean violated = switch (rule.getComparator()) {
+            case GT  -> metricValue >  rule.getThreshold();
+            case LT  -> metricValue <  rule.getThreshold();
+            case GTE -> metricValue >= rule.getThreshold();
+            case LTE -> metricValue <= rule.getThreshold();
+            case EQ  -> Double.compare(metricValue, rule.getThreshold()) == 0;
+        };
 
         if (!violated) {
             return;
@@ -109,7 +113,7 @@ public class AlertEvaluationService {
                 rule.getMetricType(),
                 record.getService().getName(),
                 metricValue,
-                rule.getComparator(),
+                rule.getComparator().getSymbol(),
                 rule.getThreshold());
 
         AlertEventEntity event = AlertEventEntity.builder()
@@ -129,7 +133,7 @@ public class AlertEvaluationService {
                 record.getService().getName(),
                 rule.getMetricType(),
                 metricValue,
-                rule.getComparator(),
+                rule.getComparator().getSymbol(),
                 rule.getThreshold());
     }
 }

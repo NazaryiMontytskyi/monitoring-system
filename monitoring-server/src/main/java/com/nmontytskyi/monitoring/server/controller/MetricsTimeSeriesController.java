@@ -1,5 +1,6 @@
 package com.nmontytskyi.monitoring.server.controller;
 
+import com.nmontytskyi.monitoring.server.dto.response.AnomalyDTO;
 import com.nmontytskyi.monitoring.server.dto.response.MetricTimePointDTO;
 import com.nmontytskyi.monitoring.server.dto.response.SystemTimePointDTO;
 import com.nmontytskyi.monitoring.server.entity.MetricRecordEntity;
@@ -47,6 +48,32 @@ public class MetricsTimeSeriesController {
                 .stream()
                 .map(this::toSystemPoint)
                 .toList();
+    }
+
+    @GetMapping("/anomalies")
+    public List<AnomalyDTO> getRecentAnomalies(
+            @RequestParam(defaultValue = "30") int minutes,
+            @RequestParam(defaultValue = "100") int limit) {
+
+        LocalDateTime from = LocalDateTime.now().minusMinutes(minutes);
+        return timeSeriesRepository
+                .findRecentAnomalies(from, PageRequest.of(0, limit))
+                .stream()
+                .map(this::toAnomalyDTO)
+                .toList();
+    }
+
+    private AnomalyDTO toAnomalyDTO(MetricRecordEntity e) {
+        double rawZ = e.getZScore();
+        Double displayZ = (Double.isNaN(rawZ) || !Double.isFinite(rawZ)) ? null : rawZ;
+        return AnomalyDTO.builder()
+                .serviceId(e.getService().getId())
+                .serviceName(e.getService().getName())
+                .recordedAt(e.getRecordedAt())
+                .zScore(displayZ)
+                .responseTimeMs(e.getResponseTimeMs())
+                .status(e.getStatus())
+                .build();
     }
 
     private MetricTimePointDTO toTimePoint(MetricRecordEntity e) {

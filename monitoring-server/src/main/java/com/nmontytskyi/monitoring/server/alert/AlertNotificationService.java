@@ -73,7 +73,7 @@ public class AlertNotificationService {
                 service.getStatus(),
                 rule.getMetricType(),
                 event.getMetricValue(),
-                rule.getComparator(), rule.getThreshold(),
+                rule.getComparator().getSymbol(), rule.getThreshold(),
                 event.getFiredAt(),
                 event.getMessage()
         );

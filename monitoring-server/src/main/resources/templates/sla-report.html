@@ -50,7 +50,24 @@
                     <td class="px-6 py-4" style="color:#94a3b8;">
                         ≥ <span th:text="${#numbers.formatDecimal(slaReport.sla.uptimePercent,1,1)}">99.9</span>%
                     </td>
-                    <td class="px-6 py-4" th:text="${slaReport.uptimeMet} ? '✅' : '❌'">—</td>
+                    <td class="px-6 py-4">
+                        <span th:if="${slaReport.uptimeMet}"
+                              class="inline-flex items-center justify-center rounded-full"
+                              style="width:28px;height:28px;background-color:rgba(34,197,94,0.15);color:#22c55e;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </span>
+                        <span th:if="${!slaReport.uptimeMet}"
+                              class="inline-flex items-center justify-center rounded-full"
+                              style="width:28px;height:28px;background-color:rgba(239,68,68,0.15);color:#ef4444;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </span>
+                    </td>
                 </tr>
                 <!-- Avg RT row -->
                 <tr th:style="${!slaReport.responseTimeMet} ? 'background-color:rgba(239,68,68,0.07);' : ''">
@@ -60,7 +77,24 @@
                     <td class="px-6 py-4" style="color:#94a3b8;">
                         ≤ <span th:text="${slaReport.sla.maxResponseTimeMs}">1000</span> ms
                     </td>
-                    <td class="px-6 py-4" th:text="${slaReport.responseTimeMet} ? '✅' : '❌'">—</td>
+                    <td class="px-6 py-4">
+                        <span th:if="${slaReport.responseTimeMet}"
+                              class="inline-flex items-center justify-center rounded-full"
+                              style="width:28px;height:28px;background-color:rgba(34,197,94,0.15);color:#22c55e;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </span>
+                        <span th:if="${!slaReport.responseTimeMet}"
+                              class="inline-flex items-center justify-center rounded-full"
+                              style="width:28px;height:28px;background-color:rgba(239,68,68,0.15);color:#ef4444;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </span>
+                    </td>
                 </tr>
                 <!-- Error rate row -->
                 <tr th:style="${!slaReport.errorRateMet} ? 'background-color:rgba(239,68,68,0.07);' : ''">
@@ -70,7 +104,24 @@
                     <td class="px-6 py-4" style="color:#94a3b8;">
                         ≤ <span th:text="${#numbers.formatDecimal(slaReport.sla.maxErrorRatePercent,1,1)}">5.0</span>%
                     </td>
-                    <td class="px-6 py-4" th:text="${slaReport.errorRateMet} ? '✅' : '❌'">—</td>
+                    <td class="px-6 py-4">
+                        <span th:if="${slaReport.errorRateMet}"
+                              class="inline-flex items-center justify-center rounded-full"
+                              style="width:28px;height:28px;background-color:rgba(34,197,94,0.15);color:#22c55e;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </span>
+                        <span th:if="${!slaReport.errorRateMet}"
+                              class="inline-flex items-center justify-center rounded-full"
+                              style="width:28px;height:28px;background-color:rgba(239,68,68,0.15);color:#ef4444;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </span>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -109,9 +160,20 @@
          th:style="${slaReport.slaBreached} ?
              'background-color:#1e293b;border:1px solid rgba(239,68,68,0.3);' :
              'background-color:#1e293b;border:1px solid rgba(34,197,94,0.3);'">
-        <p class="text-4xl font-bold"
-           th:style="${slaReport.slaBreached} ? 'color:#ef4444;' : 'color:#22c55e;'"
-           th:text="${slaReport.slaBreached} ? '❌ SLA BREACHED' : '✅ SLA MET'">STATUS</p>
+        <div class="flex items-center justify-center gap-3 text-4xl font-bold"
+             th:style="${slaReport.slaBreached} ? 'color:#ef4444;' : 'color:#22c55e;'">
+            <svg th:if="${slaReport.slaBreached}" class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="filter:drop-shadow(0 0 6px rgba(239,68,68,0.7));">
+                <path d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <svg th:if="${!slaReport.slaBreached}" class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="filter:drop-shadow(0 0 6px rgba(34,197,94,0.7));">
+                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            <span th:text="${slaReport.slaBreached} ? 'SLA BREACHED' : 'SLA MET'">STATUS</span>
+        </div>
         <p class="text-lg font-semibold mt-2" style="color:#94a3b8;">
             Compliance: <span th:text="${#numbers.formatDecimal(slaReport.compliancePercent,1,1)} + '%'">100%</span>
         </p>
