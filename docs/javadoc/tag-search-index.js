@@ -1,0 +1,1 @@
+tagSearchIndex = [{"l":"Algorithm (Z-score):","h":"class com.nmontytskyi.monitoring.detector.AnomalyDetector","d":"Section","u":"com/nmontytskyi/monitoring/detector/AnomalyDetector.html#algorithm-z-score--heading"},{"l":"Constant Field Values","h":"","u":"constant-values.html"},{"l":"Serialized Form","h":"","u":"serialized-form.html"}];updateSearchResults();

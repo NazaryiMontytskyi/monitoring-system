@@ -5,6 +5,16 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * JPA entity recording metadata for each generated PDF report.
+ *
+ * <p>Stores the report type (SLA, FULL, SYSTEM), the date range covered, the timestamp
+ * of generation, and the resulting file size. Used to populate the report history table
+ * in the web UI without re-generating reports.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.service.PdfReportService
+ */
 @Entity
 @Table(name = "report_history")
 @Getter

@@ -9,10 +9,12 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Spring Data JPA repository for {@link RegisteredServiceEntity}.
+ * Spring Data JPA repository for {@link com.nmontytskyi.monitoring.server.entity.RegisteredServiceEntity}.
  *
- * <p>Used by the registration endpoint (FR-2) and the pull scheduler (FR-1)
- * to look up services that need to be contacted for health checks.
+ * <p>Provides finder methods by service name (used during registration to detect
+ * duplicates) and retrieval of all active services consumed by the polling scheduler.
+ *
+ * @author Nazar Montytskyi
  */
 @Repository
 public interface RegisteredServiceRepository extends JpaRepository<RegisteredServiceEntity, Long> {

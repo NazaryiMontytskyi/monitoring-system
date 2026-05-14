@@ -50,6 +50,34 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <configuration>
+                    <outputDirectory>${project.basedir}/docs/javadoc</outputDirectory>
+                    <reportOutputDirectory>${project.basedir}/docs/javadoc</reportOutputDirectory>
+                    <destDir>.</destDir>
+                    <author>true</author>
+                    <version>true</version>
+                    <use>true</use>
+                    <windowtitle>Monitoring System API Documentation</windowtitle>
+                    <doctitle>Monitoring System ${project.version} API Documentation</doctitle>
+                    <bottom><![CDATA[Copyright &#169; 2024&#x2013;2025 Nazar Montytskyi. All rights reserved.]]></bottom>
+                    <doclint>none</doclint>
+                    <quiet>true</quiet>
+                    <source>21</source>
+                    <additionalJOptions>
+                        <additionalJOption>-J-Dfile.encoding=UTF-8</additionalJOption>
+                    </additionalJOptions>
+                    <excludePackageNames>
+                        com.nmontytskyi.demo.*
+                    </excludePackageNames>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencyManagement>

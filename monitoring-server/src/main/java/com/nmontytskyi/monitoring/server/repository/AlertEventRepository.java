@@ -13,10 +13,13 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * Spring Data JPA repository for {@link AlertEventEntity}.
+ * Spring Data JPA repository for {@link com.nmontytskyi.monitoring.server.entity.AlertEventEntity}.
  *
- * <p>Supports paginated queries for the event log UI (FR-3/FR-4) and the
- * cooldown check used by {@code AlertCooldownManager} to prevent alert storms.
+ * <p>Supports paginated retrieval of alert events by service for the alert log UI,
+ * bulk deletion by age for the data-retention service, and fetching the N most recent
+ * events across all services for the dashboard.
+ *
+ * @author Nazar Montytskyi
  */
 @Repository
 public interface AlertEventRepository extends JpaRepository<AlertEventEntity, Long> {

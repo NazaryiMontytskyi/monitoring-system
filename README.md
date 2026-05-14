@@ -28,6 +28,11 @@ compliance, and renders a live web dashboard — all without external dependenci
 - [Demo Services](#demo-services)
 - [Running Tests](#running-tests)
 - [Known Limitations](#known-limitations)
+- [API Documentation](#api-documentation)
+
+---
+
+> 📖 **Full API Documentation (JavaDoc):** [https://nmontytskyi.github.io/monitoring-system/javadoc/](https://nmontytskyi.github.io/monitoring-system/javadoc/)
 
 ---
 
@@ -562,6 +567,31 @@ mvn verify
 | **Maintenance windows** | No built-in alert silencing. Rules must be manually disabled during planned downtime. |
 | **Service organization** | Flat service list — no grouping by team, namespace, or domain. |
 | **Cross-service analysis** | Each service is shown independently. No dependency map or correlated-failure view. |
+
+---
+
+## API Documentation
+
+Full JavaDoc documentation for all modules is published via GitHub Pages:
+
+**[https://nmontytskyi.github.io/monitoring-system/javadoc/](https://nmontytskyi.github.io/monitoring-system/javadoc/)**
+
+The documentation covers all public classes across three modules:
+
+| Module | Description |
+|---|---|
+| `monitoring-core` | Shared model classes, metric collection interfaces, aggregation logic |
+| `monitoring-spring-boot-starter` | AOP aspects, autoconfiguration, registration beans |
+| `monitoring-server` | REST controllers, services, repositories, entities, DTOs, alert pipeline |
+
+To regenerate the documentation locally:
+
+```bash
+mvn javadoc:aggregate
+# Output: docs/javadoc/index.html
+```
+
+To enable GitHub Pages, push the `docs/javadoc/` directory and configure GitHub Pages to serve from the `docs` folder on your main branch (Settings → Pages → Source: `main` / `docs`).
 
 ---
 

@@ -18,6 +18,27 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Core alerting service that evaluates all enabled alert rules against the latest
+ * metric data for a given service.
+ *
+ * <p>Called after every metric record is persisted. For each rule the service aggregates
+ * the relevant metric over the configured evaluation window (default: 60 minutes) and
+ * compares the result against the rule's threshold using the declared comparator.
+ * When a rule is breached and the per-rule cooldown has expired:
+ * <ol>
+ *   <li>An {@link com.nmontytskyi.monitoring.server.entity.AlertEventEntity} is persisted.</li>
+ *   <li>The cooldown timer for that rule is reset via
+ *       {@link com.nmontytskyi.monitoring.server.alert.AlertCooldownManager}.</li>
+ *   <li>Email notification is dispatched via
+ *       {@link com.nmontytskyi.monitoring.server.alert.AlertNotificationService}.</li>
+ * </ol>
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.alert.AlertCooldownManager
+ * @see com.nmontytskyi.monitoring.server.alert.AlertNotificationService
+ * @see com.nmontytskyi.monitoring.server.entity.AlertRuleEntity
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

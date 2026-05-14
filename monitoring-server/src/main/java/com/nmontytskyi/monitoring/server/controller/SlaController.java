@@ -12,6 +12,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for SLA threshold management and compliance reporting.
+ *
+ * <p>Allows callers to retrieve the SLA compliance report for a service over a chosen
+ * time window (DAY / WEEK / MONTH) and to update the SLA thresholds stored in
+ * {@link com.nmontytskyi.monitoring.server.entity.SlaDefinitionEntity}.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.sla.SlaCalculationService
+ */
 @RestController
 @RequestMapping("/api/services/{id}/sla")
 @Validated

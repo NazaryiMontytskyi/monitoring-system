@@ -9,6 +9,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Service providing typed read/write access to application-wide runtime settings.
+ *
+ * <p>Settings are stored as key-value pairs in the {@code app_settings} table via
+ * {@link com.nmontytskyi.monitoring.server.entity.AppSettingsEntity}.
+ * Changes take effect immediately without restarting the server.
+ * Managed settings include: email notification address, email enabled flag,
+ * data-retention windows, and dashboard auto-refresh interval.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.entity.AppSettingsEntity
+ */
 @Service
 @RequiredArgsConstructor
 public class AppSettingsService {

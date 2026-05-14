@@ -10,6 +10,14 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Spring Data JPA repository for {@link com.nmontytskyi.monitoring.server.entity.ReportHistoryEntity}.
+ *
+ * <p>Provides finder methods for listing report history by service and bulk deletion
+ * by age used by the data-retention service.
+ *
+ * @author Nazar Montytskyi
+ */
 @Repository
 public interface ReportHistoryRepository extends JpaRepository<ReportHistoryEntity, Long> {
 

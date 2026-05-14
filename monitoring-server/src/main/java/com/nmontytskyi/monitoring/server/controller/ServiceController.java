@@ -16,6 +16,17 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * REST controller for managing the registry of monitored microservices.
+ *
+ * <p>Provides endpoints to register a new service (invoked automatically by the starter
+ * on application startup), retrieve service details, list all services, and unregister
+ * a service. Delegates to
+ * {@link com.nmontytskyi.monitoring.server.service.RegisteredServiceService}.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.service.RegisteredServiceService
+ */
 @Validated
 @RestController
 @RequestMapping("/api/services")

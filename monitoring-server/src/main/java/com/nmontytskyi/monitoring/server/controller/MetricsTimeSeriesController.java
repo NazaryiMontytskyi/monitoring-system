@@ -17,6 +17,19 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * REST controller exposing time-series metric data for chart rendering.
+ *
+ * <p>Returns per-service and system-wide metric history as ordered lists of
+ * time-point DTOs consumed by the Chart.js charts in the web UI. Also provides
+ * the anomaly record endpoint used by the anomaly list modal on the dashboard.
+ * Data is aggregated into 30-second buckets by the underlying native SQL queries.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.dto.response.MetricTimePointDTO
+ * @see com.nmontytskyi.monitoring.server.dto.response.SystemTimePointDTO
+ * @see com.nmontytskyi.monitoring.server.dto.response.AnomalyDTO
+ */
 @RestController
 @RequestMapping("/api/metrics")
 @RequiredArgsConstructor

@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Aggregated response DTO for the main dashboard, combining the overall service
+ * status counts with a list of per-service summary entries and recent alert events.
+ */
 @Data
 @Builder
 @NoArgsConstructor

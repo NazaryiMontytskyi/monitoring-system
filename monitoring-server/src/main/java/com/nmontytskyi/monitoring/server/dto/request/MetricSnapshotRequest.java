@@ -8,6 +8,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Inbound DTO carrying a single metric observation pushed by a monitored microservice
+ * or produced internally by the Actuator polling scheduler.
+ */
 @Data
 @Builder
 @NoArgsConstructor

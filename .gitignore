@@ -34,4 +34,4 @@ Thumbs.db
 #Claude
 .claire
 .claude
-settings.local.json
+.claude/settings.local.json

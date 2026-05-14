@@ -19,6 +19,19 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * REST controller exposing the metric ingestion API for monitored microservices.
+ *
+ * <p>Accepts metric snapshots pushed by the
+ * {@link com.nmontytskyi.monitoring.starter.buffer.MetricsBuffer} of each registered
+ * service. Supports both single-record and batch endpoints to minimise HTTP overhead.
+ * Every accepted snapshot is forwarded to
+ * {@link com.nmontytskyi.monitoring.server.service.MetricsPersistenceService} for
+ * persistence, anomaly detection, and alert evaluation.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.server.service.MetricsPersistenceService
+ */
 @Validated
 @RestController
 @RequestMapping("/api/metrics")

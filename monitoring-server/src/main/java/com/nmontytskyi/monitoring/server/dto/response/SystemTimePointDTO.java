@@ -7,6 +7,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Single time-point DTO for system-wide aggregated charts on the dashboard.
+ * Carries 30-second bucket averages for response time and CPU, plus counts of
+ * services in each health state and the number of distinct anomalous services.
+ */
 @Data
 @Builder
 @NoArgsConstructor

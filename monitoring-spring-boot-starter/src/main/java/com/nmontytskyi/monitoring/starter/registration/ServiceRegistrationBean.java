@@ -8,6 +8,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 
+/**
+ * Spring lifecycle bean that registers and de-registers the host microservice with the
+ * central monitoring server.
+ *
+ * <p>On {@link org.springframework.context.SmartLifecycle#start()} the bean sends a
+ * {@code POST /api/services} request to the monitoring server containing the service name,
+ * host, port, base URL, actuator URL, and initial SLA thresholds read from
+ * {@link com.nmontytskyi.monitoring.starter.config.MonitoringProperties}.
+ * The server-assigned service ID is stored for subsequent metric push requests.
+ *
+ * <p>On {@link org.springframework.context.SmartLifecycle#stop()} a
+ * {@code DELETE /api/services/{id}} request is sent so the server can mark the service
+ * as inactive rather than waiting for a polling timeout.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.starter.client.MonitoringServerClient
+ * @see com.nmontytskyi.monitoring.starter.config.MonitoringProperties
+ */
 @Slf4j
 @RequiredArgsConstructor
 public class ServiceRegistrationBean {

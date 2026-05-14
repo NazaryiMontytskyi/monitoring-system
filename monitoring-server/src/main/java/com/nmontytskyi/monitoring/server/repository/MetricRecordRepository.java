@@ -14,15 +14,13 @@ import java.util.Optional;
 
 
 /**
- * Spring Data JPA repository for {@link MetricRecordEntity}.
+ * Spring Data JPA repository for {@link com.nmontytskyi.monitoring.server.entity.MetricRecordEntity}.
  *
- * <p>This is the most query-intensive repository in the system:
- * it serves time-range queries for the dashboard (FR-3), provides the sliding
- * window of recent records for anomaly detection (FR-1), and feeds aggregate
- * calculations for the SLA report and REST API (FR-2).
+ * <p>Provides query methods for time-range retrieval, anomaly detection history (top-100
+ * records per service used as the statistical baseline), and aggregate computations
+ * used by the SLA calculation and retention services.
  *
- * <p>The composite index {@code (service_id, recorded_at DESC)} on the underlying
- * table makes all range queries here efficient even with millions of rows.
+ * @author Nazar Montytskyi
  */
 @Repository
 public interface MetricRecordRepository extends JpaRepository<MetricRecordEntity, Long> {

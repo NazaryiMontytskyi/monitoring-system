@@ -10,6 +10,23 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
+/**
+ * AOP aspect that intercepts methods annotated with {@link com.nmontytskyi.monitoring.annotation.MonitoredEndpoint}
+ * and records a {@link com.nmontytskyi.monitoring.model.MetricSnapshot} for each invocation.
+ *
+ * <p>For every matched method call the aspect measures wall-clock response time, captures
+ * the resulting {@link com.nmontytskyi.monitoring.model.HealthStatus} (UP on success, DOWN on
+ * exception), and hands the snapshot to the shared {@link com.nmontytskyi.monitoring.starter.buffer.MetricsBuffer}
+ * for asynchronous delivery to the monitoring server.
+ *
+ * <p>This aspect is registered only when {@code monitoring.enabled=true} (the default).
+ * It complements {@link com.nmontytskyi.monitoring.starter.aspect.AllEndpointsAspect}, which
+ * covers all {@code @RestController} methods when {@code monitoring.track-all-endpoints=true}.
+ *
+ * @author Nazar Montytskyi
+ * @see com.nmontytskyi.monitoring.annotation.MonitoredEndpoint
+ * @see com.nmontytskyi.monitoring.starter.buffer.MetricsBuffer
+ */
 @Slf4j
 @Aspect
 @RequiredArgsConstructor
