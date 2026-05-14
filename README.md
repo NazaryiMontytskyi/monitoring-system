@@ -32,7 +32,7 @@ compliance, and renders a live web dashboard — all without external dependenci
 
 ---
 
-> 📖 **Full API Documentation (JavaDoc):** [https://nmontytskyi.github.io/monitoring-system/javadoc/](https://nmontytskyi.github.io/monitoring-system/javadoc/)
+> 📖 **Full API Documentation (JavaDoc):** [https://nazaryimontytskyi.github.io/monitoring-system/](https://nazaryimontytskyi.github.io/monitoring-system/)
 
 ---
 
