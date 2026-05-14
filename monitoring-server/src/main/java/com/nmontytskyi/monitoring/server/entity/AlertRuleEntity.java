@@ -47,10 +47,10 @@ public class AlertRuleEntity {
     private MetricType metricType;
 
     /**
-     * Comparison direction: {@code GT} (greater than) or {@code LT} (less than).
+     * Comparison direction for evaluating metric value against threshold.
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 4)
+    @Column(nullable = false, length = 8)
     private Comparator comparator;
 
     /** Numeric threshold value for the comparison. */
@@ -97,9 +97,12 @@ public class AlertRuleEntity {
      * Comparison operator for evaluating metric values against the threshold.
      */
     public enum Comparator {
-        /** Alert fires when {@code metricValue > threshold}. */
-        GT,
-        /** Alert fires when {@code metricValue < threshold}. */
-        LT
+        GT(">"), LT("<"), GTE(">="), LTE("<="), EQ("=");
+
+        private final String symbol;
+
+        Comparator(String symbol) { this.symbol = symbol; }
+
+        public String getSymbol() { return symbol; }
     }
 }
