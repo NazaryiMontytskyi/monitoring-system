@@ -38,4 +38,16 @@ public class RetentionScheduler {
         );
         log.info("Retention scheduled with cron: {}", cron);
     }
+
+    public static String buildCron(String frequency, String timeOfDay) {
+        String[] parts = timeOfDay.split(":");
+        int hour = Integer.parseInt(parts[0]);
+        int minute = Integer.parseInt(parts[1]);
+        return switch (frequency) {
+            case "6h"     -> String.format("0 %d */6 * * *", minute);
+            case "12h"    -> String.format("0 %d */12 * * *", minute);
+            case "weekly" -> String.format("0 %d %d * * 0", minute, hour);
+            default       -> String.format("0 %d %d * * *", minute, hour);
+        };
+    }
 }

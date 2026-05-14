@@ -42,9 +42,6 @@ class AlertRuleServiceTest {
                 .threshold(500.0)
                 .enabled(true)
                 .cooldownMinutes(15)
-                .predictiveEnabled(false)
-                .lookaheadMinutes(10)
-                .minDataPoints(5)
                 .build();
     }
 
@@ -60,9 +57,6 @@ class AlertRuleServiceTest {
                 .threshold(1000.0)
                 .enabled(true)
                 .cooldownMinutes(20)
-                .predictiveEnabled(false)
-                .lookaheadMinutes(10)
-                .minDataPoints(5)
                 .build();
 
         when(serviceRepository.findById(1L)).thenReturn(Optional.of(svc));
@@ -122,58 +116,6 @@ class AlertRuleServiceTest {
         AlertRuleResponse resp = alertRuleService.create(req);
 
         assertThat(resp.getCooldownMinutes()).isEqualTo(15);
-    }
-
-    @Test
-    void create_zeroLookahead_usesDefaultTen() {
-        RegisteredServiceEntity svc = buildService(1L);
-        AlertRuleRequest req = AlertRuleRequest.builder()
-                .serviceId(1L)
-                .metricType(AlertRuleEntity.MetricType.CPU_USAGE)
-                .comparator(AlertRuleEntity.Comparator.GT)
-                .threshold(80.0)
-                .lookaheadMinutes(0)
-                .minDataPoints(0)
-                .build();
-
-        when(serviceRepository.findById(1L)).thenReturn(Optional.of(svc));
-        when(alertRuleRepository.save(any())).thenAnswer(inv -> {
-            AlertRuleEntity e = inv.getArgument(0);
-            e.setId(1L);
-            return e;
-        });
-
-        AlertRuleResponse resp = alertRuleService.create(req);
-
-        assertThat(resp.getLookaheadMinutes()).isEqualTo(10);
-        assertThat(resp.getMinDataPoints()).isEqualTo(5);
-    }
-
-    @Test
-    void create_predictiveEnabled_persisted() {
-        RegisteredServiceEntity svc = buildService(1L);
-        AlertRuleRequest req = AlertRuleRequest.builder()
-                .serviceId(1L)
-                .metricType(AlertRuleEntity.MetricType.RESPONSE_TIME_AVG)
-                .comparator(AlertRuleEntity.Comparator.GT)
-                .threshold(500.0)
-                .predictiveEnabled(true)
-                .lookaheadMinutes(15)
-                .minDataPoints(8)
-                .build();
-
-        when(serviceRepository.findById(1L)).thenReturn(Optional.of(svc));
-        when(alertRuleRepository.save(any())).thenAnswer(inv -> {
-            AlertRuleEntity e = inv.getArgument(0);
-            e.setId(5L);
-            return e;
-        });
-
-        AlertRuleResponse resp = alertRuleService.create(req);
-
-        assertThat(resp.isPredictiveEnabled()).isTrue();
-        assertThat(resp.getLookaheadMinutes()).isEqualTo(15);
-        assertThat(resp.getMinDataPoints()).isEqualTo(8);
     }
 
     // ── findByServiceId ──────────────────────────────────────────────────────

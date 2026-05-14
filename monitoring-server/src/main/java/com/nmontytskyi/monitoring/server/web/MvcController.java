@@ -198,9 +198,6 @@ public class MvcController {
             @RequestParam Double threshold,
             @RequestParam(defaultValue = "15") int cooldownMinutes,
             @RequestParam(required = false, defaultValue = "false") boolean enabled,
-            @RequestParam(required = false, defaultValue = "false") boolean predictiveEnabled,
-            @RequestParam(defaultValue = "10") int lookaheadMinutes,
-            @RequestParam(defaultValue = "5") int minDataPoints,
             RedirectAttributes redirectAttrs) {
         AlertRuleRequest request = AlertRuleRequest.builder()
                 .serviceId(serviceId)
@@ -209,9 +206,6 @@ public class MvcController {
                 .threshold(threshold)
                 .enabled(enabled)
                 .cooldownMinutes(cooldownMinutes)
-                .predictiveEnabled(predictiveEnabled)
-                .lookaheadMinutes(lookaheadMinutes)
-                .minDataPoints(minDataPoints)
                 .build();
         alertRuleService.create(request);
         redirectAttrs.addFlashAttribute("successMessage", "Rule created successfully");
@@ -257,7 +251,9 @@ public class MvcController {
         model.addAttribute("metricDays",        appSettingsService.get("retention.metric_records.days", "30"));
         model.addAttribute("alertDays",         appSettingsService.get("retention.alert_events.days",   "90"));
         model.addAttribute("reportDays",        appSettingsService.get("retention.report_history.days", "180"));
-        model.addAttribute("retentionCron",     appSettingsService.get("retention.cron",                "0 0 3 * * *"));
+        model.addAttribute("retentionCron",      appSettingsService.get("retention.cron",                "0 0 3 * * *"));
+        model.addAttribute("retentionFrequency", appSettingsService.get("retention.frequency",           "daily"));
+        model.addAttribute("retentionTime",      appSettingsService.get("retention.time",                "03:00"));
         model.addAttribute("refreshSeconds",    appSettingsService.get("dashboard.refresh.seconds",     "7"));
         model.addAttribute("currentPath", "/settings");
         return "settings";
@@ -289,13 +285,17 @@ public class MvcController {
             @RequestParam String metricDays,
             @RequestParam String alertDays,
             @RequestParam String reportDays,
-            @RequestParam String retentionCron,
+            @RequestParam String retentionFrequency,
+            @RequestParam String retentionTime,
             RedirectAttributes redirectAttrs) {
         appSettingsService.set("retention.enabled",             retentionEnabled);
         appSettingsService.set("retention.metric_records.days", metricDays);
         appSettingsService.set("retention.alert_events.days",   alertDays);
         appSettingsService.set("retention.report_history.days", reportDays);
-        appSettingsService.set("retention.cron",                retentionCron);
+        appSettingsService.set("retention.frequency",           retentionFrequency);
+        appSettingsService.set("retention.time",                retentionTime);
+        String cron = RetentionScheduler.buildCron(retentionFrequency, retentionTime);
+        appSettingsService.set("retention.cron",                cron);
         retentionScheduler.reschedule();
         redirectAttrs.addFlashAttribute("successMessage", "Retention policy updated");
         return "redirect:/settings";

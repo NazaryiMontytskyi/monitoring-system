@@ -20,7 +20,4 @@ public class AlertEventResponse {
     private double metricValue;
     private String message;
     private boolean notificationSent;
-    private boolean predictive;
-    private LocalDateTime predictedBreachAt;
-    private Double confidenceScore;
 }
