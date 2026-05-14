@@ -244,6 +244,28 @@
         <p x-show="error" x-cloak class="text-xs mt-2" style="color:#ef4444;" x-text="error"></p>
     </div>
 
+    <!-- Services Status Expanded Modal -->
+    <div id="services-status-modal"
+         style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);"
+         class="flex items-center justify-center p-4">
+        <div style="background-color:#1e293b;border:1px solid #334155;border-radius:0.75rem;width:100%;max-width:900px;max-height:80vh;display:flex;flex-direction:column;">
+            <div class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid #334155;">
+                <h2 class="text-base font-semibold" style="color:#f1f5f9;">Services Status — Full History</h2>
+                <button id="btn-services-modal-close"
+                        style="color:#94a3b8;font-size:1.25rem;line-height:1;background:none;border:none;cursor:pointer;">&times;</button>
+            </div>
+            <div style="padding:1rem 1.5rem;flex:1;min-height:0;">
+                <div id="services-modal-scroll"
+                     style="overflow-x:auto;overflow-y:hidden;width:100%;">
+                    <div id="services-modal-canvas-wrap"
+                         style="min-width:100%;">
+                        <canvas id="chart-services-modal" style="display:block;height:320px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Anomaly List Modal -->
     <div id="anomaly-modal"
          style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);"
@@ -274,6 +296,12 @@
             </div>
         </div>
     </div>
+
+    <style>
+        #services-modal-scroll::-webkit-scrollbar { height: 6px; }
+        #services-modal-scroll::-webkit-scrollbar-track { background: #0f172a; }
+        #services-modal-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
 
     <script th:src="@{/js/system-charts.js}" defer></script>
 

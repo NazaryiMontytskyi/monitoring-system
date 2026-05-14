@@ -3,8 +3,10 @@
 (function () {
     'use strict';
 
-    var POLL_INTERVAL = 7000;
-    var charts = {};
+    var POLL_INTERVAL    = 7000;
+    var VISIBLE_POINTS   = 10;
+    var charts           = {};
+    var _fullData        = { labels: [], up: [], degraded: [], down: [], avgRt: [], avgCpu: [], anomalyCounts: [] };
 
     var GRID_COLOR = 'rgba(255,255,255,0.05)';
     var GREEN  = '#22c55e';
@@ -162,25 +164,58 @@
             .then(function (points) {
                 if (!Array.isArray(points) || points.length === 0) return;
 
-                var labels       = points.map(function (p) { return fmtTime(p.recordedAt); });
-                var avgRt        = points.map(function (p) { return p.avgResponseTimeMs || 0; });
-                var avgCpu       = points.map(function (p) { return p.avgCpuUsage || 0; });
-                var up           = points.map(function (p) { return p.servicesUp || 0; });
-                var degraded     = points.map(function (p) { return p.servicesDegraded || 0; });
-                var down         = points.map(function (p) { return p.servicesDown || 0; });
-                var anomalyCounts = points.map(function (p) { return p.anomalyCount || 0; });
+                _fullData.labels       = points.map(function (p) { return fmtTime(p.recordedAt); });
+                _fullData.avgRt        = points.map(function (p) { return p.avgResponseTimeMs || 0; });
+                _fullData.avgCpu       = points.map(function (p) { return p.avgCpuUsage || 0; });
+                _fullData.up           = points.map(function (p) { return p.servicesUp || 0; });
+                _fullData.degraded     = points.map(function (p) { return p.servicesDegraded || 0; });
+                _fullData.down         = points.map(function (p) { return p.servicesDown || 0; });
+                _fullData.anomalyCounts = points.map(function (p) { return p.anomalyCount || 0; });
 
-                updateChart(charts.avgResponseTime, labels, [avgRt]);
-                updateChart(charts.statusOverview,  labels, [up, degraded, down]);
-                updateChart(charts.avgCpu,          labels, [avgCpu]);
-                updateAnomalyChart(labels, anomalyCounts);
+                var sl = function (arr) { return arr.slice(-VISIBLE_POINTS); };
+                var lbl = sl(_fullData.labels);
+
+                updateChart(charts.avgResponseTime, lbl, [sl(_fullData.avgRt)]);
+                updateChart(charts.statusOverview,  lbl, [sl(_fullData.up), sl(_fullData.degraded), sl(_fullData.down)]);
+                updateChart(charts.avgCpu,          lbl, [sl(_fullData.avgCpu)]);
+                updateAnomalyChart(lbl, sl(_fullData.anomalyCounts));
             })
             .catch(function () {});
     }
 
+    /* Build a Chart.js data object for the modal using the full (60-point) dataset.
+       Styling is copied from the current source chart's datasets. */
+    function buildFullChartData(chart, labels, datasetsData) {
+        var datasets = chart.config.data.datasets.map(function (ds, i) {
+            var copy = JSON.parse(JSON.stringify(ds));
+            copy.data = datasetsData[i] || [];
+            return copy;
+        });
+        return { labels: labels, datasets: datasets };
+    }
+
+    /* Anomaly chart uses per-bar color arrays — recompute them for all 60 points. */
+    function buildFullAnomalyData(labels, counts) {
+        return {
+            labels: labels,
+            datasets: [{
+                label: 'Anomalies',
+                data: counts,
+                backgroundColor: counts.map(function (v) {
+                    return v > 0 ? 'rgba(239,68,68,0.7)' : 'rgba(239,68,68,0.15)';
+                }),
+                borderColor: counts.map(function (v) {
+                    return v > 0 ? RED : 'rgba(239,68,68,0.3)';
+                }),
+                borderWidth: 1
+            }]
+        };
+    }
+
     function attachClickHandlers() {
+        /* sys-chart-status is handled by initServicesModal — skip it here */
         var ids = [
-            'sys-chart-avg-rt', 'sys-chart-status', 'sys-chart-avg-cpu',
+            'sys-chart-avg-rt', 'sys-chart-avg-cpu',
             'sys-chart-anomalies', 'rtBarChart'
         ];
         ids.forEach(function (id) {
@@ -191,8 +226,98 @@
                 if (!chart || typeof openChartModal !== 'function') return;
                 var card = canvas.closest('.chart-card');
                 var titleEl = card ? (card.querySelector('p') || card.querySelector('h2')) : null;
-                openChartModal(chart, titleEl ? titleEl.textContent.trim() : id);
+                var title = titleEl ? titleEl.textContent.trim() : id;
+
+                var fullData;
+                if (_fullData.labels.length > 0) {
+                    if (id === 'sys-chart-avg-rt') {
+                        fullData = buildFullChartData(chart, _fullData.labels, [_fullData.avgRt]);
+                    } else if (id === 'sys-chart-avg-cpu') {
+                        fullData = buildFullChartData(chart, _fullData.labels, [_fullData.avgCpu]);
+                    } else if (id === 'sys-chart-anomalies') {
+                        fullData = buildFullAnomalyData(_fullData.labels, _fullData.anomalyCounts);
+                    }
+                    /* rtBarChart is server-rendered per-service data — no full override needed */
+                }
+
+                openChartModal(chart, title, fullData);
             });
+        });
+    }
+
+    function openServicesModal() {
+        var modal = document.getElementById('services-status-modal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+
+        var BAR_WIDTH_PX = 28;
+        var scroll  = document.getElementById('services-modal-scroll');
+        var wrap    = document.getElementById('services-modal-canvas-wrap');
+        var canvas  = document.getElementById('chart-services-modal');
+        if (!scroll || !wrap || !canvas) return;
+
+        var labels   = _fullData.labels;
+        var minWidth = Math.max(scroll.clientWidth, labels.length * BAR_WIDTH_PX);
+
+        wrap.style.width   = minWidth + 'px';
+        canvas.width       = minWidth;
+        canvas.height      = 320;
+        canvas.style.width  = minWidth + 'px';
+        canvas.style.height = '320px';
+
+        var existing = Chart.getChart(canvas);
+        if (existing) { existing.destroy(); }
+
+        var GRID = 'rgba(255,255,255,0.05)';
+        new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    makeBarDataset('Up',       GREEN,  _fullData.up),
+                    makeBarDataset('Degraded', YELLOW, _fullData.degraded),
+                    makeBarDataset('Down',     RED,    _fullData.down)
+                ]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: {
+                    legend:  { display: true, labels: { color: '#94a3b8', boxWidth: 12, font: { size: 12 } } },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { stacked: true, ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: GRID } },
+                    y: { stacked: true, ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: GRID }, beginAtZero: true }
+                }
+            }
+        });
+
+        scroll.scrollLeft = scroll.scrollWidth;
+    }
+
+    function initServicesModal() {
+        var statusCanvas = document.getElementById('sys-chart-status');
+        if (statusCanvas) {
+            statusCanvas.style.cursor = 'pointer';
+            statusCanvas.addEventListener('click', openServicesModal);
+        }
+
+        var modal    = document.getElementById('services-status-modal');
+        var closeBtn = document.getElementById('btn-services-modal-close');
+        if (!modal) return;
+
+        function closeModal() { modal.style.display = 'none'; }
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeModal();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal.style.display !== 'none') closeModal();
         });
     }
 
@@ -282,6 +407,7 @@
         initCharts();
         attachClickHandlers();
         initAnomalyModal();
+        initServicesModal();
         fetchAndRender();
         setInterval(fetchAndRender, POLL_INTERVAL);
     });

@@ -3,8 +3,16 @@
 (function () {
     'use strict';
 
-    var POLL_INTERVAL = 7000;
-    var charts = {};
+    var POLL_INTERVAL  = 7000;
+    var VISIBLE_POINTS = 10;
+    var charts         = {};
+
+    /* Full (up to 60-point) dataset kept in memory for the modal. */
+    var _svcFullData = {
+        labels: [], responseTimes: [], anomalies: [], zScores: [],
+        cpuSystem: [], cpuProcess: [], heapUsed: [], heapMax: [],
+        nonHeap: [], threadsLive: [], threadsDaemon: [], gcPause: []
+    };
 
     var DARK_BG    = '#1f2937';
     var GRID_COLOR = 'rgba(255,255,255,0.05)';
@@ -205,30 +213,79 @@
             .then(function (points) {
                 if (!Array.isArray(points) || points.length === 0) return;
 
-                var labels        = points.map(function (p) { return fmtTime(p.recordedAt); });
-                var responseTimes = points.map(function (p) { return p.responseTimeMs; });
-                var anomalies     = points.map(function (p) { return !!p.anomaly; });
-                var zScores       = points.map(function (p) { return p.zScore || 0; });
-                var cpuSystem     = points.map(function (p) { return orNull(p.cpuUsage); });
-                var cpuProcess    = points.map(function (p) { return orNull(p.processCpuUsage); });
-                var heapUsed      = points.map(function (p) { return orNull(p.heapUsedMb); });
-                var heapMax       = points.map(function (p) { return orNull(p.heapMaxMb); });
-                var nonHeap       = points.map(function (p) { return orNull(p.nonHeapUsedMb); });
-                var threadsLive   = points.map(function (p) { return orNull(p.threadsLive); });
-                var threadsDaemon = points.map(function (p) { return orNull(p.threadsDaemon); });
-                var gcPause       = points.map(function (p) { return orNull(p.gcPauseMs); });
+                /* Store the full dataset for modal use. */
+                _svcFullData.labels        = points.map(function (p) { return fmtTime(p.recordedAt); });
+                _svcFullData.responseTimes = points.map(function (p) { return p.responseTimeMs; });
+                _svcFullData.anomalies     = points.map(function (p) { return !!p.anomaly; });
+                _svcFullData.zScores       = points.map(function (p) { return p.zScore || 0; });
+                _svcFullData.cpuSystem     = points.map(function (p) { return orNull(p.cpuUsage); });
+                _svcFullData.cpuProcess    = points.map(function (p) { return orNull(p.processCpuUsage); });
+                _svcFullData.heapUsed      = points.map(function (p) { return orNull(p.heapUsedMb); });
+                _svcFullData.heapMax       = points.map(function (p) { return orNull(p.heapMaxMb); });
+                _svcFullData.nonHeap       = points.map(function (p) { return orNull(p.nonHeapUsedMb); });
+                _svcFullData.threadsLive   = points.map(function (p) { return orNull(p.threadsLive); });
+                _svcFullData.threadsDaemon = points.map(function (p) { return orNull(p.threadsDaemon); });
+                _svcFullData.gcPause       = points.map(function (p) { return orNull(p.gcPauseMs); });
 
-                updateResponseTimeChart(labels, responseTimes, anomalies, zScores);
-                updateChart(charts.cpu,       labels, [cpuSystem, cpuProcess]);
-                updateChart(charts.heap,      labels, [heapUsed, heapMax]);
-                updateChart(charts.nonHeap,   labels, [nonHeap]);
-                updateChart(charts.threads,   labels, [threadsLive, threadsDaemon]);
-                updateChart(charts.gc,        labels, [gcPause]);
+                /* Render only the last VISIBLE_POINTS on the small canvases. */
+                var sl  = function (arr) { return arr.slice(-VISIBLE_POINTS); };
+                var lbl = sl(_svcFullData.labels);
 
-                var anomalyCount = anomalies.filter(function (a) { return a; }).length;
+                updateResponseTimeChart(lbl, sl(_svcFullData.responseTimes),
+                                        sl(_svcFullData.anomalies), sl(_svcFullData.zScores));
+                updateChart(charts.cpu,     lbl, [sl(_svcFullData.cpuSystem), sl(_svcFullData.cpuProcess)]);
+                updateChart(charts.heap,    lbl, [sl(_svcFullData.heapUsed),  sl(_svcFullData.heapMax)]);
+                updateChart(charts.nonHeap, lbl, [sl(_svcFullData.nonHeap)]);
+                updateChart(charts.threads, lbl, [sl(_svcFullData.threadsLive), sl(_svcFullData.threadsDaemon)]);
+                updateChart(charts.gc,      lbl, [sl(_svcFullData.gcPause)]);
+
+                /* Anomaly banner counts across the whole 30-min window. */
+                var anomalyCount = _svcFullData.anomalies.filter(function (a) { return a; }).length;
                 updateAnomalyBanner(anomalyCount);
             })
             .catch(function () {});
+    }
+
+    /* Build a full (60-point) Chart.js data object for simple line charts.
+       Copies dataset styling from the source chart, replaces data arrays. */
+    function buildSvcFullChartData(chart, labels, datasetsData) {
+        var datasets = chart.config.data.datasets.map(function (ds, i) {
+            return {
+                label:           ds.label,
+                data:            datasetsData[i] || [],
+                borderColor:     ds.borderColor,
+                backgroundColor: ds.backgroundColor,
+                borderWidth:     ds.borderWidth || 2,
+                tension:         ds.tension != null ? ds.tension : 0.4,
+                fill:            ds.fill || false,
+                pointRadius:     3,
+                pointHoverRadius: 5
+            };
+        });
+        return { labels: labels, datasets: datasets };
+    }
+
+    /* Response-time chart needs per-point anomaly markers rebuilt for all 60 points. */
+    function buildFullResponseTimeData() {
+        var labels    = _svcFullData.labels;
+        var values    = _svcFullData.responseTimes;
+        var anomalies = _svcFullData.anomalies;
+        return {
+            labels: labels,
+            datasets: [{
+                label:            'Response Time (ms)',
+                data:             values,
+                borderColor:      GREEN,
+                backgroundColor:  GREEN,
+                borderWidth:      2,
+                tension:          0.4,
+                fill:             false,
+                pointBackgroundColor: anomalies.map(function (a) { return a ? RED : GREEN; }),
+                pointBorderColor:     anomalies.map(function (a) { return a ? RED : GREEN; }),
+                pointRadius:          anomalies.map(function (a) { return a ? 7 : 2; }),
+                pointHoverRadius:     anomalies.map(function (a) { return a ? 9 : 4; })
+            }]
+        };
     }
 
     function attachClickHandlers() {
@@ -244,7 +301,27 @@
                 if (!chart || typeof openChartModal !== 'function') return;
                 var card = canvas.closest('.chart-card');
                 var titleEl = card ? card.querySelector('p') : null;
-                openChartModal(chart, titleEl ? titleEl.textContent.trim() : id);
+                var title = titleEl ? titleEl.textContent.trim() : id;
+
+                var fullData;
+                if (_svcFullData.labels.length > 0) {
+                    var lbl = _svcFullData.labels;
+                    if (id === 'chart-response-time') {
+                        fullData = buildFullResponseTimeData();
+                    } else if (id === 'chart-cpu') {
+                        fullData = buildSvcFullChartData(chart, lbl, [_svcFullData.cpuSystem, _svcFullData.cpuProcess]);
+                    } else if (id === 'chart-heap') {
+                        fullData = buildSvcFullChartData(chart, lbl, [_svcFullData.heapUsed, _svcFullData.heapMax]);
+                    } else if (id === 'chart-non-heap') {
+                        fullData = buildSvcFullChartData(chart, lbl, [_svcFullData.nonHeap]);
+                    } else if (id === 'chart-threads') {
+                        fullData = buildSvcFullChartData(chart, lbl, [_svcFullData.threadsLive, _svcFullData.threadsDaemon]);
+                    } else if (id === 'chart-gc') {
+                        fullData = buildSvcFullChartData(chart, lbl, [_svcFullData.gcPause]);
+                    }
+                }
+
+                openChartModal(chart, title, fullData);
             });
         });
     }
