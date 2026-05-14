@@ -27,6 +27,7 @@ public interface MetricTimeSeriesRepository extends Repository<MetricRecordEntit
 
     @Query("""
             SELECT m FROM MetricRecordEntity m
+            JOIN FETCH m.service
             WHERE m.anomaly = true
               AND m.recordedAt >= :from
             ORDER BY m.recordedAt DESC

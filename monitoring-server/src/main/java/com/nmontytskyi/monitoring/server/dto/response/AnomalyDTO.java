@@ -16,7 +16,7 @@ public class AnomalyDTO {
     private Long serviceId;
     private String serviceName;
     private LocalDateTime recordedAt;
-    private double zScore;
+    private Double zScore;
     private double responseTimeMs;
     private HealthStatus status;
 }

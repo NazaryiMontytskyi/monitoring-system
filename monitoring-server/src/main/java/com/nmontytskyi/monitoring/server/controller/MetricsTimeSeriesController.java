@@ -64,11 +64,13 @@ public class MetricsTimeSeriesController {
     }
 
     private AnomalyDTO toAnomalyDTO(MetricRecordEntity e) {
+        double rawZ = e.getZScore();
+        Double displayZ = (Double.isNaN(rawZ) || !Double.isFinite(rawZ)) ? null : rawZ;
         return AnomalyDTO.builder()
                 .serviceId(e.getService().getId())
                 .serviceName(e.getService().getName())
                 .recordedAt(e.getRecordedAt())
-                .zScore(e.getZScore())
+                .zScore(displayZ)
                 .responseTimeMs(e.getResponseTimeMs())
                 .status(e.getStatus())
                 .build();

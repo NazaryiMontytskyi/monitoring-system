@@ -387,12 +387,14 @@
                     var time = fmtTime(r.recordedAt);
                     var color = statusColor(r.status);
 
+                    var z = Number(r.zScore);
+                    var zText = Number.isFinite(z) ? z.toFixed(2) : '—';
                     tr.innerHTML =
                         '<td class="px-4 py-3" style="color:#94a3b8;">' + time + '</td>' +
                         '<td class="px-4 py-3 font-medium" style="color:#f1f5f9;">' + (r.serviceName || '—') + '</td>' +
                         '<td class="px-4 py-3"><span style="color:' + color + ';font-weight:600;">' + (r.status || '—') + '</span></td>' +
                         '<td class="px-4 py-3" style="color:#94a3b8;">' + r.responseTimeMs + ' ms</td>' +
-                        '<td class="px-4 py-3" style="color:#fca5a5;">' + Number(r.zScore).toFixed(2) + '</td>';
+                        '<td class="px-4 py-3" style="color:#fca5a5;">' + zText + '</td>';
 
                     tbody.appendChild(tr);
                 });
