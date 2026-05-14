@@ -27,18 +27,18 @@ public interface MetricTimeSeriesRepository extends Repository<MetricRecordEntit
 
     @Query(value = """
             SELECT
-                DATE_TRUNC('minute', recorded_at)          AS bucket,
+                TO_TIMESTAMP(FLOOR(EXTRACT(EPOCH FROM recorded_at) / 30) * 30)::timestamp AS bucket,
                 AVG(response_time_ms)                      AS avg_rt,
                 MAX(response_time_ms)                      AS max_rt,
                 AVG(cpu_usage)                             AS avg_cpu,
                 AVG(heap_used_mb)                          AS avg_heap,
-                SUM(CASE WHEN status = 'UP'       THEN 1 ELSE 0 END) AS up_cnt,
-                SUM(CASE WHEN status = 'DOWN'     THEN 1 ELSE 0 END) AS down_cnt,
-                SUM(CASE WHEN status = 'DEGRADED' THEN 1 ELSE 0 END) AS deg_cnt,
-                SUM(CASE WHEN anomaly = true      THEN 1 ELSE 0 END) AS anomaly_cnt
+                COUNT(DISTINCT CASE WHEN status = 'UP'       THEN service_id END) AS up_cnt,
+                COUNT(DISTINCT CASE WHEN status = 'DOWN'     THEN service_id END) AS down_cnt,
+                COUNT(DISTINCT CASE WHEN status = 'DEGRADED' THEN service_id END) AS deg_cnt,
+                COUNT(DISTINCT CASE WHEN anomaly = true      THEN service_id END) AS anomaly_cnt
             FROM metric_records
             WHERE recorded_at >= :from
-            GROUP BY DATE_TRUNC('minute', recorded_at)
+            GROUP BY FLOOR(EXTRACT(EPOCH FROM recorded_at) / 30)
             ORDER BY bucket ASC
             LIMIT :lim
             """, nativeQuery = true)
