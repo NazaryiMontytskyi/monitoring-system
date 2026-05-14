@@ -1,433 +1,91 @@
-# Monitoring System
+# Microservice Monitoring System
 
-> Diploma project — "Software for monitoring the state of microservices based on the Spring Framework"
-
-A self-contained monitoring stack for Spring Boot microservices. Provides a reusable
-Spring Boot Starter that embeds into any target service with a single annotation, a central
-server that collects, stores and visualises metrics, and a demo suite that illustrates
-end-to-end usage.
+A self-hosted monitoring platform for Spring Boot microservices built as a diploma project.
+The system collects technical metrics (response time, CPU, heap memory, JVM threads, GC pauses),
+detects anomalies in real time, fires configurable alerts with email notifications, tracks SLA
+compliance, and renders a live web dashboard — all without external dependencies beyond PostgreSQL.
 
 ---
 
 ## Table of Contents
 
-1. [Problem Statement](#problem-statement)
-2. [Solution Overview](#solution-overview)
-3. [Functional Requirements](#functional-requirements)
-4. [Architecture](#architecture)
-5. [Module Structure](#module-structure)
-6. [How It Works — Data Flow](#how-it-works--data-flow)
-7. [Key Concepts](#key-concepts)
-   - [Annotations](#annotations)
-   - [Metrics Collection — Two Parallel Streams](#metrics-collection--two-parallel-streams)
-   - [Anomaly Detection (Z-score)](#anomaly-detection-z-score)
-   - [Percentiles P50 / P95 / P99](#percentiles-p50--p95--p99)
-   - [SLA Tracking](#sla-tracking)
-   - [Business Metrics](#business-metrics)
-   - [Alerting](#alerting)
-8. [Web Interface](#web-interface)
-9. [REST API](#rest-api)
-10. [Tech Stack](#tech-stack)
-11. [Implementation Phases](#implementation-phases)
-12. [Getting Started](#getting-started)
-
----
-
-## Problem Statement
-
-In a microservice architecture, individual services fail, slow down, or degrade silently.
-Without centralised observability a team has no visibility into which service is the source
-of a problem, whether SLA commitments are being met, or which business operations are
-affected. Existing solutions (Prometheus + Grafana) require significant infrastructure
-setup. This project provides a lightweight, Spring-native alternative that can be adopted
-with a single dependency and one annotation.
-
----
-
-## Solution Overview
-
-The system consists of two reusable artefacts and a demo suite:
-
-| Artefact | Role |
-|---|---|
-| `monitoring-spring-boot-starter` | JAR library. Add as a dependency — the service auto-registers and starts reporting metrics. |
-| `monitoring-server` | Runnable JAR / Docker image. Deploy once in the infrastructure. Collects, stores, visualises, and alerts. |
-| `demo/*` | Minimal Spring Boot apps that show how to integrate the starter. Not part of the product. |
-
-A developer in a different project needs to do exactly two things:
-
-**Step 1** — add the starter dependency:
-```xml
-<dependency>
-    <groupId>com.nmontytskyi</groupId>
-    <artifactId>monitoring-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-
-**Step 2** — annotate the main class and point to the server:
-```java
-@MonitoredMicroservice(
-    name = "order-service",
-    serverUrl = "http://monitoring.company.com:8080",
-    sla = @Sla(uptimePercent = 99.9, maxResponseTimeMs = 300)
-)
-@SpringBootApplication
-public class OrderServiceApplication { ... }
-```
-
-That is all. The service registers itself, the dashboard shows it, alerts fire automatically.
-
----
-
-## Functional Requirements
-
-| # | Requirement |
-|---|---|
-| FR-1 | Collect and aggregate technical metrics from microservices: availability, response time, CPU, heap memory. |
-| FR-2 | Provide a REST API for receiving and querying monitoring data, usable by external systems. |
-| FR-3 | Implement a visualisation subsystem — a web dashboard with real-time charts. |
-| FR-4 | Implement an alerting mechanism — notify via email when thresholds are exceeded or a service goes down. |
+- [Architecture](#architecture)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+  - [Monitoring Server](#monitoring-server-configuration)
+  - [Monitored Microservice (Starter)](#monitored-microservice-starter-configuration)
+- [Integrating the Starter](#integrating-the-starter)
+- [REST API Overview](#rest-api-overview)
+- [Web UI Pages](#web-ui-pages)
+- [Alerting](#alerting)
+- [Anomaly Detection](#anomaly-detection)
+- [SLA Tracking](#sla-tracking)
+- [PDF Reports](#pdf-reports)
+- [Data Retention](#data-retention)
+- [Demo Services](#demo-services)
+- [Running Tests](#running-tests)
+- [Known Limitations](#known-limitations)
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                        monitoring-server                              │
-│                                                                       │
-│  ┌───────────────┐  ┌─────────────────┐  ┌────────────────────────┐ │
-│  │   REST API    │  │   Scheduler     │  │    Alert Engine        │ │
-│  │ (Controllers) │  │ pull /actuator  │  │ evaluates rules →      │ │
-│  │ Swagger UI    │  │ every 30s       │  │ sends email via        │ │
-│  └──────┬────────┘  └────────┬────────┘  │ JavaMailSender         │ │
-│         │                   │            └────────────────────────┘ │
-│  ┌──────▼───────────────────▼──────────────────────────────────────┐ │
-│  │                      PostgreSQL                                  │ │
-│  │  registered_services │ metric_records │ alert_rules │ alert_events│ │
-│  └─────────────────────────────────────────────────────────────────┘ │
-│         │                                                             │
-│  ┌──────▼──────────────────────────────────────────────────────────┐ │
-│  │     Web Interface  (Thymeleaf + Bootstrap 5 + Chart.js)         │ │
-│  │  Dashboard │ Service Detail │ SLA Report │ Alert Rules │ Events  │ │
-│  └─────────────────────────────────────────────────────────────────┘ │
-└───────────────────────────────┬──────────────────────────────────────┘
-                                │ HTTP
-              ┌─────────────────┼─────────────────┐
-              ▼                 ▼                  ▼
-   ┌─────────────────┐  ┌────────────┐  ┌────────────────┐
-   │monitoring-spring│  │  order-    │  │  inventory-    │
-   │ -boot-starter   │  │  service   │  │  service       │
-   │                 │  │            │  │                │
-   │ embedded in     │  │ /actuator  │  │ /actuator      │
-   │ every service   │  │ @Monitored │  │ @Monitored     │
-   │ auto-registers  │  │ Microserv. │  │ Microserv.     │
-   └─────────────────┘  └────────────┘  └────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      Monitoring Server                          │
+│                         (port 8080)                             │
+│                                                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
+│  │ REST API │  │  Web UI  │  │ Alerting │  │ Anomaly Det.  │  │
+│  │ 25+ eps  │  │Thymeleaf │  │  Email   │  │   Z-score     │  │
+│  └──────────┘  └──────────┘  └──────────┘  └───────────────┘  │
+│                          │                                      │
+│                     PostgreSQL                                  │
+└─────────────────────────────────────────────────────────────────┘
+         ▲  PUSH (batch)              ▲  PULL (every 30 s)
+         │                            │ /actuator/health
+         │                            │ /actuator/metrics
+┌────────┴───────────┐    ┌───────────┴──────────┐
+│  order-service     │    │  inventory-service   │  ...
+│  @MonitoredMicro-  │    │  @MonitoredMicro-    │
+│  service           │    │  service             │
+│                    │    │                      │
+│  AOP aspects       │    │  AOP aspects         │
+│  Metrics buffer    │    │  Metrics buffer      │
+└────────────────────┘    └──────────────────────┘
+          monitoring-spring-boot-starter
 ```
 
-**Pull stream** — `monitoring-server` scheduler calls `/actuator/health` and
-`/actuator/metrics` on every registered service every 30 seconds.
+**Two metric collection modes run simultaneously:**
 
-**Push stream** — the AOP aspect inside the starter intercepts every annotated method call,
-measures duration and status, and sends a `MetricSnapshot` to the server asynchronously.
+- **PUSH** — AOP aspects in the starter intercept endpoint calls and flush buffered metrics to the
+  server every 5 seconds (configurable). Captures precise per-request data including response time
+  and HTTP status.
+- **PULL** — The server polls each registered service's Spring Boot Actuator endpoints
+  (`/actuator/health`, `/actuator/metrics`) every 30 seconds to collect JVM-level metrics
+  (heap, threads, GC, CPU) independently of request traffic.
 
 ---
 
-## Module Structure
+## Features
 
-```
-monitoring-system/                         ← root Maven POM
-│
-├── monitoring-core/                       ← Phase 1 ✅
-│   Pure Java, no Spring dependencies.
-│   Shared vocabulary used by all other modules.
-│   │
-│   ├── annotation/
-│   │   ├── @MonitoredEndpoint             selective endpoint monitoring
-│   │   ├── @TrackMetric                   execution time of any method
-│   │   ├── @TrackBusinessMetric           business event counting
-│   │   └── @Sla                           SLA threshold definition
-│   │
-│   ├── model/
-│   │   ├── HealthStatus (enum)            UP / DEGRADED / DOWN / UNKNOWN
-│   │   ├── ServiceInfo                    registered service descriptor
-│   │   ├── MetricSnapshot                 single point-in-time measurement
-│   │   ├── SlaDefinition                  SLA parameters + factory methods
-│   │   ├── SlaReport                      compliance report with percentiles
-│   │   └── BusinessMetric                 named business event
-│   │
-│   ├── collector/
-│   │   ├── MetricsCollector (interface)   contract: collect(ServiceInfo)
-│   │   └── MetricsReporter (interface)    contract: report / reportBatch / reportBusiness
-│   │
-│   └── detector/
-│       ├── AnomalyDetector                Z-score, configurable threshold (default 3σ)
-│       └── PercentileCalculator           P50 / P95 / P99, Nearest Rank Method
-│
-├── monitoring-spring-boot-starter/        ← Phase 5 (planned)
-│   Spring Boot auto-configuration library.
-│   Embedded into each monitored microservice.
-│   │
-│   ├── @MonitoredMicroservice             meta-annotation — activates everything
-│   ├── MonitoringAutoConfiguration        reads annotation attributes via ImportAware
-│   ├── MonitoringAspect (AOP)             intercepts @RestController / @MonitoredEndpoint
-│   ├── ServiceRegistrationBean            POST /api/services on application startup
-│   ├── HttpMetricsReporter                implements MetricsReporter via HTTP POST
-│   ├── MetricsBuffer                      buffers snapshots, sends in batches
-│   └── MonitoringProperties               spring config: server-url, service-name, enabled
-│
-├── monitoring-server/                     ← Phases 2-4, 6-7 (planned)
-│   Central Spring Boot application.
-│   Deployed once, serves the entire infrastructure.
-│   │
-│   ├── entity/                            JPA entities (PostgreSQL)
-│   ├── repository/                        Spring Data JPA repositories
-│   ├── service/                           business logic layer
-│   ├── controller/                        REST API + MVC web pages
-│   ├── scheduler/                         pull-based health check scheduler
-│   ├── alert/                             threshold evaluation + email dispatch
-│   └── resources/
-│       ├── application.yml
-│       ├── templates/                     Thymeleaf HTML templates
-│       └── static/                        Bootstrap 5, Chart.js
-│
-└── demo/                                  ← Phase 8 (planned)
-    Standalone Maven project, NOT part of the product.
-    Shows how to integrate the starter.
-    │
-    ├── demo-order-service
-    └── demo-inventory-service
-        Each has: @MonitoredMicroservice, /actuator, simulation endpoints
-        (/simulate/slow, /simulate/error, /simulate/normal)
-```
-
----
-
-## How It Works — Data Flow
-
-### Service registration (once at startup)
-```
-@MonitoredMicroservice detected by Spring
-        │
-        ▼
-MonitoringAutoConfiguration reads: name, serverUrl, sla, trackAllEndpoints
-        │
-        ▼
-ServiceRegistrationBean.run()  →  POST /api/services  →  monitoring-server
-        │                         { name, host, port, actuatorUrl, sla }
-        ▼
-RegisteredServiceEntity saved to PostgreSQL
-Dashboard shows the new service with status UNKNOWN
-```
-
-### Push metrics (every HTTP request to an annotated endpoint)
-```
-Client  →  GET /orders  →  MonitoringAspect intercepts
-                                  │
-                          measures: start time
-                                  │
-                          calls:  pjp.proceed()  →  OrderController.getOrders()
-                                  │
-                          measures: end time, catches exceptions
-                                  │
-                          builds: MetricSnapshot { endpoint, responseTimeMs, status }
-                                  │
-                          MetricsBuffer.add(snapshot)
-                                  │  (every 5 seconds, batch send)
-                                  ▼
-                          POST /api/metrics/endpoint  →  monitoring-server
-                                  │
-                          MetricRecordEntity saved to PostgreSQL
-                          AnomalyDetector evaluates against history
-                          AlertEvaluationService checks all AlertRules
-```
-
-### Pull metrics (every 30 seconds, server-side)
-```
-@Scheduled HealthCheckScheduler
-        │
-        ▼
-For each RegisteredServiceEntity:
-        │
-        ├── GET {actuatorUrl}/health   →  { status: "UP", components: {...} }
-        ├── GET {actuatorUrl}/metrics/jvm.memory.used
-        └── GET {actuatorUrl}/metrics/system.cpu.usage
-        │
-        ▼
-ActuatorMetricsCollector builds MetricSnapshot
-        │
-        ▼
-MetricsPersistenceService saves MetricRecordEntity
-AnomalyDetector evaluates { responseTimeMs } against last 100 records
-AlertEvaluationService checks all AlertRules for this service
-```
-
-### Alert flow
-```
-After every MetricRecord save:
-        │
-        ▼
-AlertEvaluationService checks rules:
-  response_time_avg > threshold_ms  ?
-  status == DOWN                    ?
-  cpu_usage > threshold_%           ?
-  uptime_percent < threshold_%      ?
-        │
-        ▼ (rule violated)
-AlertCooldownManager: has 15 min passed since last alert for this rule?
-        │
-        ▼ (yes)
-AlertNotificationService sends HTML email via JavaMailSender:
-  Subject: [ALERT] order-service — Response time exceeded threshold
-  Body:    service name, status, metric value, threshold, timestamp, dashboard link
-        │
-        ▼
-AlertEventEntity saved to PostgreSQL → visible in event log UI
-```
-
----
-
-## Key Concepts
-
-### Annotations
-
-| Annotation | Target | Purpose |
-|---|---|---|
-| `@MonitoredMicroservice` | Main class | Activates the entire monitoring stack for this service |
-| `@MonitoredEndpoint` | Method | Marks a specific REST method for individual monitoring |
-| `@TrackMetric` | Method | Records execution time of any Spring component method |
-| `@TrackBusinessMetric` | Method | Records a business event counter on successful completion |
-| `@Sla` | Attribute of `@MonitoredMicroservice` | Defines numeric SLA thresholds for the service |
-
-### Metrics Collection — Two Parallel Streams
-
-| | Push (starter → server) | Pull (server → Actuator) |
-|---|---|---|
-| **Initiated by** | Starter AOP aspect after each request | Server scheduler every 30s |
-| **Granularity** | Per-endpoint (GET /orders, POST /payments) | Per-service (overall health) |
-| **Data** | Response time, status, error message | CPU, heap, disk, uptime |
-| **Dependency** | Only our starter | Requires Spring Boot Actuator |
-
-### Anomaly Detection (Z-score)
-
-Instead of hard thresholds (`response_time > 1000ms`), the system learns each service's
-own normal behaviour and detects deviations from it:
-
-```
-Historical data (last 100 measurements): mean = 120ms, stdDev = 15ms
-Current value: 280ms
-Z = (280 - 120) / 15 = 10.67  →  |Z| > 3.0  →  ANOMALY
-```
-
-- Service A with baseline 800ms → anomaly above ~1200ms
-- Service B with baseline 50ms  → anomaly above ~130ms
-
-Requires at least 10 historical samples. Returns `insufficient()` otherwise.
-Default threshold: 3σ (configurable). Implemented in `AnomalyDetector`.
-
-### Percentiles P50 / P95 / P99
-
-Average response time hides problems. Percentiles reveal tail latency:
-
-```
-1000 requests per minute:
-P50 =   95ms  ← half of requests are faster
-P95 =  340ms  ← 95% of requests are faster
-P99 = 1200ms  ← 1% of requests are slower than this
-```
-
-Average = 110ms looks fine. But P99 = 1200ms means every 100th user waits 1.2 seconds.
-Implemented in `PercentileCalculator` using the Nearest Rank Method.
-
-### SLA Tracking
-
-Each service defines an SLA contract. The system automatically evaluates compliance
-over time windows (hour, day, week, month):
-
-```
-order-service — SLA report for April 2026:
-  Uptime:         99.7%   ✗  (target: 99.9%)  ← BREACH
-  Response time:  187ms   ✓  (target: < 300ms)
-  Error rate:     0.3%    ✓  (target: < 1%)
-  Compliance:     66.7%
-```
-
-Defined via `@Sla`, stored as `SlaDefinition`, reported as `SlaReport`.
-
-### Business Metrics
-
-The starter can track domain-level events alongside technical metrics:
-
-```java
-@TrackBusinessMetric(name = "orders.created", unit = "count")
-public Order createOrder(OrderRequest request) { ... }
-```
-
-Dashboard shows business activity correlated with technical performance:
-when CPU spikes to 90%, the order creation count drops simultaneously.
-
-### Alerting
-
-Alert rules are configurable per service:
-
-| Trigger | Example |
+| Category | Detail |
 |---|---|
-| Response time exceeded | `avg response time > 1000ms` |
-| Service unavailable | `status == DOWN` |
-| CPU overload | `cpu_usage > 80%` |
-| Uptime below threshold | `uptime_percent < 99.0` |
-
-Cooldown period (default 15 min) prevents alert spam.
-Notifications are sent as HTML emails via `JavaMailSender`.
-All fired alerts are persisted as `AlertEvent` and visible in the UI.
-
----
-
-## Web Interface
-
-Built with Thymeleaf + Bootstrap 5 + Chart.js. No separate frontend build required.
-Charts refresh automatically every 15 seconds via `fetch()` + Chart.js.
-
-| Page | URL | Contents |
-|---|---|---|
-| Dashboard | `GET /` | Cards for all services: status badge, avg response time, uptime %, CPU |
-| Service detail | `GET /services/{id}` | Response time line chart (P50/P95/P99), error rate bar chart, endpoint breakdown table |
-| SLA report | `GET /services/{id}/sla` | Compliance % over time windows, breach history |
-| Alert rules | `GET /alerts/rules` | Rule list, create/delete form |
-| Event log | `GET /alerts/events` | Paginated table of all fired alerts |
-
----
-
-## REST API
-
-Documented via Swagger UI at `/swagger-ui.html`.
-
-```
-/api/services
-  POST    register a service
-  GET     list all services
-  DELETE  /{id}
-
-/api/metrics/{serviceId}
-  GET     full metric history
-  GET     /latest
-  GET     /aggregate?from=&to=   (avg, min, max, uptime %)
-
-/api/metrics/endpoint
-  POST    receive endpoint snapshot from starter (push stream)
-
-/api/alerts/rules
-  GET     list rules
-  POST    create rule
-  DELETE  /{id}
-
-/api/alerts/events
-  GET     ?serviceId=&from=&to=
-
-/api/dashboard
-  GET     summary state of all services (used by UI auto-refresh)
-```
+| **Metric collection** | Response time, HTTP status, CPU usage (system + process), heap memory (used / max), non-heap memory, JVM live / daemon threads, GC pause time |
+| **Collection modes** | PUSH via AOP starter · PULL via Actuator polling |
+| **Anomaly detection** | Z-score algorithm per service, configurable threshold (default 3σ), anomaly flag and score persisted per record |
+| **Alerting** | 5 metric types · 5 comparators · per-rule cooldown · email notifications |
+| **SLA tracking** | Uptime %, max response time, max error rate — configurable per service, reports for DAY / WEEK / MONTH windows |
+| **Live dashboard** | System-wide charts (Avg RT, Services Status, Avg CPU, Anomalies/min) · per-service detail page with 6 real-time charts |
+| **Historical view** | Windowed 10-point view on dashboard cards · full 60-point horizontally-scrollable modal on click |
+| **PDF reports** | Service SLA report, full service report, system-wide report — with generation history |
+| **Data retention** | Scheduled cleanup with configurable retention windows for metrics, alerts, and report history |
+| **Settings UI** | Email notifications, SLA thresholds, retention policy, dashboard refresh rate — managed at runtime, no restart required |
+| **API documentation** | Swagger UI available at `/swagger-ui.html` |
+| **Tests** | 45+ test classes including integration tests with Testcontainers + WireMock |
 
 ---
 
@@ -438,106 +96,476 @@ Documented via Swagger UI at `/swagger-ui.html`.
 | Language | Java 21 |
 | Framework | Spring Boot 3.3.4 |
 | Build | Maven (multi-module) |
-| Persistence | Spring Data JPA + PostgreSQL |
+| Database | PostgreSQL 15+ |
 | Migrations | Flyway |
-| Email | Spring Boot Mail (JavaMailSender) |
-| Web UI | Thymeleaf + Bootstrap 5 + Chart.js |
-| API docs | SpringDoc OpenAPI (Swagger UI) |
-| AOP | Spring AOP (AspectJ weaving) |
-| Utilities | Lombok |
-| Tests | JUnit 5 + AssertJ |
+| ORM | Spring Data JPA / Hibernate |
+| Template engine | Thymeleaf |
+| Charts | Chart.js 4.4 |
+| CSS utilities | Tailwind CSS (CDN) |
+| Reactive UI | Alpine.js 3 |
+| Email | Spring Mail (SMTP) |
+| Code generation | Lombok |
+| Testing | JUnit 5, AssertJ, Testcontainers, WireMock |
 
 ---
 
-## Implementation Phases
+## Project Structure
 
-| Phase | Scope | Status |
-|---|---|---|
-| 1 | `monitoring-core` — domain model, annotations, analysis utilities, 74 unit tests | ✅ Done |
-| 2 | `monitoring-server` — JPA entities, repositories, `application.yml`, Flyway | ⬜ Next |
-| 3 | `monitoring-server` — REST API controllers, DTOs, Swagger | ⬜ Planned |
-| 4 | `monitoring-server` — metrics collection: Actuator client, scheduler, aggregation | ⬜ Planned |
-| 5 | `monitoring-spring-boot-starter` — `@MonitoredMicroservice`, AOP aspect, HTTP reporter | ⬜ Planned |
-| 6 | `monitoring-server` — alert evaluation, email dispatch, cooldown, event log | ⬜ Planned |
-| 7 | `monitoring-server` — Thymeleaf web UI, Chart.js dashboard, SLA report page | ⬜ Planned |
-| 8 | `demo/*` — two minimal Spring Boot apps with simulation endpoints | ⬜ Planned |
-
----
-
-## Getting Started
-
-### Prerequisites
-- Java 21
-- Maven 3.9+
-- PostgreSQL 15+ (or Docker)
-
-### Run monitoring-server
-```bash
-# Start PostgreSQL
-docker run -d --name monitoring-pg \
-  -e POSTGRES_DB=monitoring \
-  -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 postgres:15
-
-# Build and run
-mvn clean install -pl monitoring-core
-mvn spring-boot:run -pl monitoring-server
+```
+monitoring-system/
+├── monitoring-core/                   # Pure Java — no Spring dependency
+│   ├── model/                         # HealthStatus, MetricSnapshot, SlaReport, ...
+│   ├── detector/                      # AnomalyDetector, PercentileCalculator
+│   ├── collector/                     # MetricsCollector, MetricsReporter interfaces
+│   └── annotation/                    # @MonitoredEndpoint, @TrackMetric,
+│                                      # @TrackBusinessMetric, @Sla
+│
+├── monitoring-spring-boot-starter/    # Auto-configuration for target microservices
+│   ├── aspect/                        # MonitoredEndpointAspect, AllEndpointsAspect
+│   ├── buffer/                        # MetricsBuffer (async flush queue)
+│   ├── client/                        # MonitoringServerClient (REST push)
+│   ├── registration/                  # ServiceRegistrationBean
+│   └── config/                        # MonitoringAutoConfiguration, MonitoringProperties
+│
+├── monitoring-server/                 # Central monitoring server
+│   ├── controller/                    # 7 REST controllers + 1 MVC controller
+│   ├── service/                       # AlertEvaluationService, MetricsPersistenceService,
+│   │                                  # PdfReportService, SlaCalculationService,
+│   │                                  # AppSettingsService, RetentionService
+│   ├── alert/                         # AlertNotificationService, AlertCooldownManager
+│   ├── repository/                    # 8 JPA repositories
+│   ├── entity/                        # RegisteredServiceEntity, MetricRecordEntity,
+│   │                                  # AlertRuleEntity, AlertEventEntity,
+│   │                                  # SlaDefinitionEntity, AppSettingsEntity,
+│   │                                  # ReportHistoryEntity
+│   ├── scheduler/                     # MetricsPollingScheduler, ActuatorClient
+│   └── resources/
+│       ├── static/js/                 # system-charts.js, service-charts.js, charts.js
+│       ├── templates/                 # Thymeleaf pages
+│       └── db/migration/             # Flyway V1–V11 SQL migrations
+│
+└── demo/                              # Three pre-built demo microservices
+    ├── demo-order-service/            # port 8082
+    ├── demo-inventory-service/        # port 8083
+    └── demo-payment-service/          # port 8084
 ```
 
-Dashboard: `http://localhost:8080`
-Swagger UI: `http://localhost:8080/swagger-ui.html`
+---
 
-### Quick Start — add monitoring to your microservice
+## Quick Start
 
-**Step 1** — add the starter dependency:
+### Prerequisites
+
+- Java 21+
+- Maven 3.9+
+- PostgreSQL 15+ (default: `localhost:5433`, database `monitoring`)
+- SMTP credentials — optional, required only for email alerts
+
+### 1. Create the database
+
+```sql
+CREATE DATABASE monitoring;
+```
+
+Flyway migrations run automatically on first start and create all tables and indexes.
+
+### 2. Build all modules
+
+```bash
+# From the repository root
+mvn clean install -DskipTests
+```
+
+### 3. Start the monitoring server
+
+```bash
+cd monitoring-server
+mvn spring-boot:run
+```
+
+With explicit environment variables:
+
+```bash
+DB_URL=jdbc:postgresql://localhost:5433/monitoring \
+DB_USERNAME=postgres \
+DB_PASSWORD=secret \
+MAIL_HOST=smtp.gmail.com \
+MAIL_USERNAME=you@gmail.com \
+MAIL_PASSWORD=your-app-password \
+mvn spring-boot:run
+```
+
+Open **http://localhost:8080** — the dashboard is ready.
+
+### 4. Start the demo services (optional)
+
+```bash
+# In separate terminals
+cd demo/demo-order-service     && mvn spring-boot:run   # port 8082
+cd demo/demo-inventory-service && mvn spring-boot:run   # port 8083
+cd demo/demo-payment-service   && mvn spring-boot:run   # port 8084
+```
+
+Each demo service registers itself with the monitoring server automatically on startup and begins
+pushing metrics within seconds.
+
+---
+
+## Configuration
+
+### Monitoring Server Configuration
+
+```yaml
+# application.yml — shown with defaults
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url:      ${DB_URL:jdbc:postgresql://localhost:5433/monitoring}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  mail:
+    host:     ${MAIL_HOST:smtp.gmail.com}
+    port:     ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties.mail.smtp:
+      auth:             true
+      starttls.enable:  true
+
+monitoring:
+  polling:
+    enabled:                 true
+    interval-seconds:        30    # actuator pull interval
+    timeout-seconds:         5
+    connect-timeout-seconds: 3
+  alert:
+    enabled:                    true
+    evaluation-window-minutes:  60
+    notification-from: ${ALERT_FROM_EMAIL:monitoring@example.com}
+    notification-to:   ${ALERT_TO_EMAIL:admin@example.com}
+```
+
+Runtime settings (email recipient, SLA thresholds, retention periods, dashboard refresh rate) are
+managed through the **Settings** page and persisted in the database — no restart required.
+
+---
+
+### Monitored Microservice (Starter) Configuration
+
+```yaml
+# application.yml of the target microservice
+
+monitoring:
+  server-url:               http://localhost:8080   # monitoring server address
+  service-name:             my-service              # logical name (auto-detected if blank)
+  service-host:             localhost
+  service-port:             8081
+  actuator-url:             http://localhost:8081/actuator
+  base-url:                 http://localhost:8081
+  enabled:                  true
+  track-all-endpoints:      false   # true = auto-intercept all @RestController methods
+  buffer-flush-interval-ms: 5000    # push interval in milliseconds
+  buffer-max-size:          100     # immediate flush when queue reaches this size
+  sla-response-time-ms:     1000    # SLA: max acceptable average response time
+  sla-uptime-percent:       99.9    # SLA: minimum required uptime
+  sla-error-rate-percent:   5.0     # SLA: maximum acceptable error rate
+```
+
+---
+
+## Integrating the Starter
+
+### Step 1 — Add the Maven dependency
+
 ```xml
 <dependency>
     <groupId>com.nmontytskyi</groupId>
     <artifactId>monitoring-spring-boot-starter</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
-**Step 2** — annotate the main class (no `application.yml` required):
+### Step 2 — Annotate the main application class
+
 ```java
 @SpringBootApplication
 @MonitoredMicroservice(
-    name = "order-service",
-    serverUrl = "http://monitoring-server:8080",
-    sla = @Sla(uptimePercent = 99.9, maxResponseTimeMs = 500),
-    trackAllEndpoints = true   // intercept all @RestController methods automatically
+    name                  = "payment-service",
+    trackAllEndpoints     = true,       // auto-monitor all REST endpoints
+    bufferFlushIntervalMs = 5000
 )
-public class OrderServiceApplication {
+public class PaymentServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(OrderServiceApplication.class, args);
+        SpringApplication.run(PaymentServiceApplication.class, args);
     }
 }
 ```
 
-That is all. The service auto-registers, all REST endpoints are monitored, metrics are
-batched and flushed every 5 seconds, and alerts fire automatically when SLA is breached.
+### Step 3 — (Optional) Fine-grained control
 
-**Optional** — override any annotation value via `application.yml`:
-```yaml
-# Only the properties you want to change
-monitoring:
-  server-url: http://monitoring-server:8080   # overrides annotation serverUrl
-  buffer-flush-interval-ms: 2000             # flush more frequently
-```
-
-**Selective monitoring** — use `@MonitoredEndpoint` on specific methods when
-`trackAllEndpoints = false` (the default):
 ```java
-@RestController
-public class OrderController {
-    @MonitoredEndpoint
-    @PostMapping("/orders")
-    public Order createOrder(@RequestBody OrderRequest req) { ... }
-}
+// Override the display name for a specific endpoint
+@GetMapping("/orders/{id}")
+@MonitoredEndpoint(name = "Get Order by ID")
+public Order getOrder(@PathVariable Long id) { ... }
+
+// Manually track an arbitrary code block
+@TrackMetric(name = "inventory-check")
+public boolean checkStock(Long productId) { ... }
 ```
 
-**Business metrics** — track any method with `@TrackMetric`:
-```java
-@TrackMetric(name = "orders.processed", kind = MetricKind.COUNTER)
-public void processOrder(Order order) { ... }
+### What happens on startup
+
+1. The starter registers the service with the monitoring server (name, host, port, SLA thresholds).
+2. AOP aspects intercept configured endpoints and buffer metric snapshots in memory.
+3. Every `bufferFlushIntervalMs` milliseconds, all buffered snapshots are sent in a single batch
+   `POST /api/metrics/batch` request to the monitoring server.
+4. The server independently polls `/actuator/health` and `/actuator/metrics` every 30 seconds
+   to collect JVM-level metrics regardless of traffic.
+
+---
+
+## REST API Overview
+
+**Base URL:** `http://localhost:8080/api`  
+**Interactive docs:** `http://localhost:8080/swagger-ui.html`
+
+### Services
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/services` | Register a new microservice |
+| `GET` | `/services` | List all registered services |
+| `GET` | `/services/{id}` | Get service details and current status |
+| `DELETE` | `/services/{id}` | Unregister a service |
+
+### Metrics
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/metrics/endpoint` | Push a single metric snapshot |
+| `POST` | `/metrics/batch` | Push a batch of metric snapshots |
+| `GET` | `/metrics/{serviceId}/latest` | Get the latest metric record |
+| `GET` | `/metrics/{serviceId}/aggregate` | Get aggregated metrics (configurable window) |
+| `GET` | `/metrics/{serviceId}/history` | Time-series history (default: last 30 min, 60 points) |
+| `GET` | `/metrics/system/history` | System-wide aggregated time series |
+| `GET` | `/metrics/anomalies` | Recent anomaly records (default: last 30 min, 100 records) |
+
+### Alerts
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/alerts/rules` | Create an alert rule |
+| `GET` | `/alerts/rules` | List rules (optional `?serviceId=`) |
+| `DELETE` | `/alerts/rules/{id}` | Delete a rule |
+| `GET` | `/alerts/events` | Paginated alert event log |
+
+### SLA
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/services/{id}/sla` | Get SLA compliance report (`?window=DAY\|WEEK\|MONTH`) |
+| `PUT` | `/services/{id}/sla` | Update SLA thresholds for a service |
+
+### Reports
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/reports/{serviceId}/sla` | Download SLA report as PDF |
+| `GET` | `/reports/{serviceId}/full` | Download full service report as PDF |
+| `GET` | `/reports/system` | Download system-wide report as PDF (`?from=&to=`) |
+| `GET` | `/reports/{serviceId}/history` | List report generation history |
+
+### Settings
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/settings` | Retrieve all application settings |
+| `POST` | `/settings/email` | Update the notification email address |
+
+---
+
+## Web UI Pages
+
+| URL | Page | Description |
+|---|---|---|
+| `/` | **Dashboard** | System stat cards (total / up / degraded / down), 4 live system charts, service status table, recent alert log |
+| `/services/{id}` | **Service Detail** | 6 live per-service charts: Response Time, CPU, Heap memory, Non-Heap, JVM Threads, GC Pause · anomaly banner · current status |
+| `/services/{id}/sla` | **SLA Report** | Actual uptime %, avg response time, and error rate vs. configured thresholds for DAY / WEEK / MONTH |
+| `/services/{id}/reports` | **Reports** | PDF generation with date-range picker · generation history (type, date, size) |
+| `/alerts` | **Alerts** | Alert rules management (create, enable/disable, delete) · paginated event log |
+| `/settings` | **Settings** | Email notifications · SLA thresholds per service · data retention policy · dashboard auto-refresh interval |
+
+### Chart interaction
+
+Every chart card is clickable. Clicking opens a full-screen modal that shows:
+
+- **All 60 data points** — not just the 10-point window visible on the small card
+- **Horizontal scrolling** for dense time-series data (28 px/point for bar charts, 20 px/point
+  for line charts; the canvas is as wide as needed)
+- Automatically scrolled to the **rightmost (most recent)** position when opened
+- `Escape` key or backdrop click to close
+
+The Services Status chart has its own dedicated modal (triggered by clicking the chart card)
+with stacked bars showing Up / Degraded / Down counts over time, also with full horizontal scroll.
+
+---
+
+## Alerting
+
+### Alert rule fields
+
+| Field | Options | Description |
+|---|---|---|
+| `metricType` | `RESPONSE_TIME_AVG`, `STATUS_DOWN`, `CPU_USAGE`, `UPTIME_PERCENT`, `ERROR_RATE` | Metric to evaluate |
+| `comparator` | `GT`, `LT`, `GTE`, `LTE`, `EQ` | Comparison operator |
+| `threshold` | numeric | Value to compare against |
+| `cooldownMinutes` | integer | Minimum gap between repeated firings of this rule |
+| `enabled` | boolean | Disable without deleting |
+
+### Notification flow
+
+1. `MetricsPollingScheduler` collects fresh actuator data every 30 seconds.
+2. `AlertEvaluationService` evaluates all enabled rules against the aggregated data for the
+   configured evaluation window (default: last 60 minutes).
+3. `AlertCooldownManager` suppresses re-firing within the cooldown period.
+4. A new `AlertEventEntity` is written to the database.
+5. If email notifications are enabled, `AlertNotificationService` dispatches an HTML email
+   via the configured SMTP server.
+
+All fired events appear in the **Alerts** page and in the **Recent Alerts** section on the dashboard.
+
+---
+
+## Anomaly Detection
+
+The system applies a **Z-score algorithm** to every incoming metric record:
+
 ```
+z = (current_response_time − mean) / stddev
+```
+
+| Parameter | Value |
+|---|---|
+| Sample window | 100 most recent records for the service |
+| Minimum sample size | 10 records (detection skipped below this) |
+| Default threshold | \|z\| > 3.0 (approximately 3 standard deviations) |
+| Edge case (stddev = 0) | Any deviation from the constant mean is flagged |
+
+Each `MetricRecordEntity` row stores both the `anomaly` flag and the `zScore`. Anomaly
+records surface in three places:
+
+- **Anomalies/min** bar chart on the dashboard (count of distinct anomalous services per
+  30-second bucket)
+- **Anomalies** list modal (LIST button) — service name, status, response time, z-score
+- **Response Time** chart on the Service Detail page — anomalous points rendered as oversized
+  red dots with a tooltip showing the z-score
+
+---
+
+## SLA Tracking
+
+SLA thresholds are stored per service and compared against real measured values:
+
+| Threshold | Description | Default |
+|---|---|---|
+| `uptimePercent` | Minimum required uptime percentage | 99.9 % |
+| `maxResponseTimeMs` | Maximum acceptable average response time | 1 000 ms |
+| `maxErrorRatePercent` | Maximum acceptable error rate | 5.0 % |
+
+The SLA report page computes actual values over the selected window (DAY / WEEK / MONTH) and
+displays a pass / fail status for each threshold. Thresholds can be updated at any time via
+the **Settings** page or `PUT /api/services/{id}/sla`.
+
+---
+
+## PDF Reports
+
+| Report | Endpoint | Contents |
+|---|---|---|
+| **SLA Report** | `GET /api/reports/{id}/sla` | SLA compliance summary for a service |
+| **Full Service Report** | `GET /api/reports/{id}/full` | Complete metrics history, anomaly log, and SLA for a service |
+| **System Report** | `GET /api/reports/system?from=&to=` | All services aggregated over a chosen date range |
+
+Generation history (timestamp, report type, file size) is persisted and accessible from the
+**Reports** page per service.
+
+---
+
+## Data Retention
+
+Automatic scheduled cleanup prevents unbounded database growth.
+
+| Setting | Default | Description |
+|---|---|---|
+| `retention.enabled` | `true` | Master on/off switch |
+| `retention.metric_records.days` | 30 | Days to keep metric records |
+| `retention.alert_events.days` | 90 | Days to keep alert events |
+| `retention.report_history.days` | 180 | Days to keep report history entries |
+| `retention.frequency` | `daily` | `daily` or `weekly` |
+| `retention.time` | `03:00` | Time of day the cleanup job runs |
+
+All settings are configurable at runtime through the **Settings** page.
+
+---
+
+## Demo Services
+
+Three demo microservices illustrate end-to-end integration with the starter:
+
+| Service | Port | Sample endpoints |
+|---|---|---|
+| `demo-order-service` | 8082 | `GET /orders`, `POST /orders`, `GET /orders/{id}` |
+| `demo-inventory-service` | 8083 | `GET /inventory`, `GET /inventory/{productId}` |
+| `demo-payment-service` | 8084 | `POST /payments`, `GET /payments/{id}` |
+
+Each service uses `@MonitoredMicroservice(trackAllEndpoints = true)` and connects to the
+monitoring server via the `monitoring.server-url` property. On startup they self-register and
+begin pushing metrics within seconds; the server starts pulling Actuator data within the
+first 30-second polling cycle.
+
+---
+
+## Running Tests
+
+```bash
+# Run all tests across all modules
+mvn test
+
+# Run tests for a single module
+cd monitoring-server && mvn test
+
+# Run integration tests (requires Docker for Testcontainers)
+mvn verify
+```
+
+### Test infrastructure
+
+| Type | Tools | Coverage |
+|---|---|---|
+| Unit tests | JUnit 5, AssertJ | Anomaly detector, percentile calculator, alert evaluation, SLA calculation, metric persistence, cooldown manager |
+| Integration tests | Testcontainers (PostgreSQL), WireMock | Full metric ingestion pipeline, polling scheduler, alert firing, PDF generation, MVC controllers |
+| Starter tests | Spring Boot Test, WireMock | AOP aspects, metrics buffer, service registration, server client |
+
+---
+
+## Known Limitations
+
+| Area | Limitation |
+|---|---|
+| **Security** | No authentication or authorization. All endpoints and UI pages are publicly accessible. Intended for deployment in trusted internal networks only. |
+| **Alert channels** | Email only. No webhook, Slack, PagerDuty, or other integration. |
+| **Maintenance windows** | No built-in alert silencing. Rules must be manually disabled during planned downtime. |
+| **Service organization** | Flat service list — no grouping by team, namespace, or domain. |
+| **Cross-service analysis** | Each service is shown independently. No dependency map or correlated-failure view. |
+
+---
+
+## License
+
+Academic project — Diploma thesis, 2025.  
+Author: Nazar Montytskyi
