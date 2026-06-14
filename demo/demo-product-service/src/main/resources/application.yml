@@ -1,0 +1,11 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: product-service
+
+monitoring:
+  server-url: ${MONITORING_SERVER_URL:http://localhost:8080}
+  actuator-url: ${MONITORING_ACTUATOR_URL:http://localhost:8088/actuator}
+  base-url: ${MONITORING_BASE_URL:http://localhost:8088}

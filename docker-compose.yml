@@ -115,3 +115,93 @@ services:
       MONITORING_BASE_URL: http://localhost:8083
     networks:
       - monitoring-network
+
+  demo-user-service:
+    build:
+      context: .
+      dockerfile: demo/Dockerfile
+      args:
+        SERVICE_MODULE: demo-user-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      monitoring-server:
+        condition: service_healthy
+    environment:
+      MONITORING_SERVER_URL: http://monitoring-server:8080
+      MONITORING_ACTUATOR_URL: http://demo-user-service:8085/actuator
+      MONITORING_BASE_URL: http://localhost:8085
+    networks:
+      - monitoring-network
+
+  demo-notification-service:
+    build:
+      context: .
+      dockerfile: demo/Dockerfile
+      args:
+        SERVICE_MODULE: demo-notification-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      monitoring-server:
+        condition: service_healthy
+    environment:
+      MONITORING_SERVER_URL: http://monitoring-server:8080
+      MONITORING_ACTUATOR_URL: http://demo-notification-service:8086/actuator
+      MONITORING_BASE_URL: http://localhost:8086
+    networks:
+      - monitoring-network
+
+  demo-shipping-service:
+    build:
+      context: .
+      dockerfile: demo/Dockerfile
+      args:
+        SERVICE_MODULE: demo-shipping-service
+    ports:
+      - "8087:8087"
+    depends_on:
+      monitoring-server:
+        condition: service_healthy
+    environment:
+      MONITORING_SERVER_URL: http://monitoring-server:8080
+      MONITORING_ACTUATOR_URL: http://demo-shipping-service:8087/actuator
+      MONITORING_BASE_URL: http://localhost:8087
+    networks:
+      - monitoring-network
+
+  demo-product-service:
+    build:
+      context: .
+      dockerfile: demo/Dockerfile
+      args:
+        SERVICE_MODULE: demo-product-service
+    ports:
+      - "8088:8088"
+    depends_on:
+      monitoring-server:
+        condition: service_healthy
+    environment:
+      MONITORING_SERVER_URL: http://monitoring-server:8080
+      MONITORING_ACTUATOR_URL: http://demo-product-service:8088/actuator
+      MONITORING_BASE_URL: http://localhost:8088
+    networks:
+      - monitoring-network
+
+  demo-analytics-service:
+    build:
+      context: .
+      dockerfile: demo/Dockerfile
+      args:
+        SERVICE_MODULE: demo-analytics-service
+    ports:
+      - "8089:8089"
+    depends_on:
+      monitoring-server:
+        condition: service_healthy
+    environment:
+      MONITORING_SERVER_URL: http://monitoring-server:8080
+      MONITORING_ACTUATOR_URL: http://demo-analytics-service:8089/actuator
+      MONITORING_BASE_URL: http://localhost:8089
+    networks:
+      - monitoring-network

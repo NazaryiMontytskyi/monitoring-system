@@ -21,6 +21,11 @@
         <module>demo-order-service</module>
         <module>demo-inventory-service</module>
         <module>demo-payment-service</module>
+        <module>demo-user-service</module>
+        <module>demo-notification-service</module>
+        <module>demo-shipping-service</module>
+        <module>demo-product-service</module>
+        <module>demo-analytics-service</module>
     </modules>
 
     <properties>

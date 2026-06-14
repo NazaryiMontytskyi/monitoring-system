@@ -26,7 +26,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Саме тут ми вказуємо вашу папку
           path: './docs/javadoc/'
 
       - name: Deploy to GitHub Pages
